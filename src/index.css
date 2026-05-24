@@ -1,0 +1,27 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Inter', system-ui, sans-serif;
+  
+  --color-brand-primary: #8b5cf6;
+  --color-brand-primary-hover: #7c3aed;
+  
+  --color-bg-dark: #09090b;
+}
+
+@layer base {
+  body {
+    @apply bg-bg-dark text-slate-100 min-h-screen antialiased;
+    background-image: radial-gradient(circle at top right, #1e1b4b, #09090b 60%);
+  }
+}
+
+@layer utilities {
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-br from-purple-400 to-fuchsia-400;
+  }
+  
+  .glass-panel {
+    @apply bg-white/5 backdrop-blur-md border border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] rounded-2xl;
+  }
+}
