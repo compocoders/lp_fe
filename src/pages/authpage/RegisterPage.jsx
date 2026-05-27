@@ -1,11 +1,30 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Mail, Lock, LogIn } from 'lucide-react';
 import { register } from '../../api/auth.api';
+import { motion } from 'framer-motion';
+
+const fadeUpVariant = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } }
+};
+
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.1 }
+  }
+};
+
+const slideFromRight = {
+  hidden: { opacity: 0, x: 40 },
+  visible: { opacity: 1, x: 0, transition: { duration: 0.8, delay: 0.2, ease: [0.22, 1, 0.36, 1] } }
+};
 
 export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
@@ -13,6 +32,12 @@ export default function RegisterPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -35,112 +60,117 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-          Create a new account
-        </h2>
-        <p className="mt-2 text-center text-sm text-gray-600">
-          Or{' '}
-          <Link to="/login" className="font-medium text-blue-600 hover:text-blue-500">
-            sign in to your existing account
-          </Link>
-        </p>
-      </div>
+    <div className="flex min-h-screen bg-white font-sans overflow-hidden">
+      
+      {/* Left Column: Form */}
+      <div className="w-full lg:w-1/2 flex flex-col px-8 sm:px-16 md:px-24 py-10 relative">
+        
+        {/* Branding */}
+        <motion.div 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          onClick={() => navigate('/')} 
+          className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity self-start"
+        >
+          <img src="/image/logo.svg" alt="Likhā Logo" className="w-10 h-10 md:w-12 md:h-12 drop-shadow-sm" />
+          <span className="text-xl md:text-2xl font-black text-[#698864] tracking-[0.25em]">L I K H Â</span>
+        </motion.div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-          <form className="space-y-6" onSubmit={handleSubmit}>
-            {/* Show error message if it exists */}
+        {/* Form Container */}
+        <motion.div 
+          variants={staggerContainer}
+          initial="hidden"
+          animate="visible"
+          className="flex-1 flex flex-col justify-center max-w-sm mx-auto w-full mt-10 lg:mt-0"
+        >
+          <motion.div variants={fadeUpVariant} className="text-center mb-10">
+            <h1 className="text-4xl md:text-[2.75rem] font-extrabold text-[#52704E] mb-4 tracking-tight">Welcome</h1>
+            <p className="text-gray-500 text-sm md:text-base font-medium leading-relaxed max-w-[260px] mx-auto">
+              Ready to start learning? Enter your details below to join Likhā.
+            </p>
+          </motion.div>
+
+          <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
-              <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-4">
-                <div className="flex">
-                  <div className="ml-3">
-                    <p className="text-sm text-red-700">{error}</p>
-                  </div>
-                </div>
-              </div>
+              <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-red-50 text-red-600 text-sm p-3 rounded-xl text-center border border-red-100 font-medium">
+                {error}
+              </motion.div>
             )}
 
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email address
-              </label>
-              <div className="mt-1 relative rounded-md shadow-sm">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail className="h-5 w-5 text-gray-400" />
-                </div>
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md py-2 border text-gray-900 bg-white"
-                  placeholder="you@example.com"
-                  disabled={isLoading}
-                />
-              </div>
-            </div>
+            <motion.div variants={fadeUpVariant} className="space-y-2">
+              <label className="text-[#698864] font-bold text-sm ml-1 block">Email</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                disabled={isLoading}
+                placeholder="Enter your email"
+                className="w-full bg-[#F4F5F4] text-gray-800 rounded-xl px-5 py-4 focus:outline-none focus:ring-2 focus:ring-[#698864]/30 transition-all font-medium placeholder-gray-400 border-none"
+              />
+            </motion.div>
 
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Password
-              </label>
-              <div className="mt-1 relative rounded-md shadow-sm">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className="h-5 w-5 text-gray-400" />
-                </div>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md py-2 border text-gray-900 bg-white"
-                  placeholder="••••••••"
-                  disabled={isLoading}
-                />
-              </div>
-            </div>
+            <motion.div variants={fadeUpVariant} className="space-y-2">
+              <label className="text-[#698864] font-bold text-sm ml-1 block">Password</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                disabled={isLoading}
+                placeholder="Enter your password"
+                className="w-full bg-[#F4F5F4] text-gray-800 rounded-xl px-5 py-4 focus:outline-none focus:ring-2 focus:ring-[#698864]/30 transition-all font-medium placeholder-gray-400 border-none"
+              />
+            </motion.div>
 
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <input
-                  id="remember-me"
-                  name="remember-me"
-                  type="checkbox"
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                />
-                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
-                  Remember me
-                </label>
-              </div>
+            <motion.div variants={fadeUpVariant} className="space-y-2">
+              <label className="text-[#698864] font-bold text-sm ml-1 block">Re-enter password</label>
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                disabled={isLoading}
+                placeholder="Re-enter password"
+                className="w-full bg-[#F4F5F4] text-gray-800 rounded-xl px-5 py-4 focus:outline-none focus:ring-2 focus:ring-[#698864]/30 transition-all font-medium placeholder-gray-400 border-none"
+              />
+            </motion.div>
 
-              <div className="text-sm">
-                <a href="#" className="font-medium text-blue-600 hover:text-blue-500">
-                  Forgot your password?
-                </a>
-              </div>
-            </div>
-
-            <div>
+            <motion.div variants={fadeUpVariant}>
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 gap-2 items-center disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-[#7C9A76] hover:bg-[#698864] text-white font-bold py-4 rounded-xl transition-all shadow-md hover:shadow-lg mt-2 disabled:opacity-70 flex justify-center items-center text-lg hover:-translate-y-0.5 active:translate-y-0"
               >
-                <LogIn className="w-4 h-4" />
-                {isLoading ? 'Creating account...' : 'Create account'}
+                {isLoading ? 'Registering...' : 'Register'}
               </button>
-            </div>
+            </motion.div>
           </form>
-        </div>
+
+          <motion.p variants={fadeUpVariant} className="text-center mt-8 text-sm text-gray-800 font-bold">
+            Already have an account?{' '}
+            <Link to="/login" className="text-[#698864] hover:underline underline-offset-4 font-bold">
+              Login here
+            </Link>
+          </motion.p>
+        </motion.div>
       </div>
+
+      {/* Right Column: Background Image */}
+      <motion.div 
+        variants={slideFromRight}
+        initial="hidden"
+        animate="visible"
+        className="hidden lg:block lg:w-1/2 relative bg-[#F5F8F1]"
+        style={{
+          backgroundImage: "url('/image/register-image.jpg')",
+          backgroundSize: "contain",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat"
+        }}
+      />
+
     </div>
   );
 }

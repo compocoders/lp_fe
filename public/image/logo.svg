@@ -1,0 +1,13 @@
+<svg width="240" height="240" viewBox="0 0 240 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Optional soft background (can be removed for transparent logo) -->
+  <rect width="240" height="240" rx="48" fill="#F4F5F4"/>
+  
+  <!-- Outer 'L' / Book Page 1 -->
+  <path d="M80 65V150C80 166.569 93.4315 180 110 180H170" stroke="#52704E" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- Inner 'L' / Book Page 2 -->
+  <path d="M120 65V110C120 126.569 133.431 140 150 140H170" stroke="#7C9A76" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- The Spark / AI Creation Star -->
+  <path d="M160 40C160 40 160 55 145 55C160 55 160 70 160 70C160 70 160 55 175 55C160 55 160 40 160 40Z" fill="#698864"/>
+</svg>

@@ -1,13 +1,27 @@
 import React, { useState } from 'react';
-import { User, Image as ImageIcon, Briefcase, Save } from 'lucide-react';
-import {createProfile} from '../../api/profile.api';
+import { createProfile } from '../../api/profile.api';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+
+const fadeUpVariant = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } }
+};
+
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.1 }
+  }
+};
+
 export default function CreateProfile() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
-    status: '',
+    age: '',
     profilePicture: ''
   });
   const [isLoading, setIsLoading] = useState(false);
@@ -23,11 +37,10 @@ export default function CreateProfile() {
     setError(null);
     
     try {
+      // Assuming backend expects age and will map it or process it
       const response = await createProfile(formData);
-
-   
       console.log('Profile created:', response);
-      navigate('/'); // Redirect to dashboard or profile page
+      navigate('/'); 
     } catch (err) {
       setError('Failed to create profile. Please try again.');
     } finally {
@@ -36,108 +49,132 @@ export default function CreateProfile() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
-      <div className="bg-white shadow sm:rounded-lg">
-        <div className="px-4 py-5 sm:p-6">
-          <h3 className="text-lg leading-6 font-medium text-gray-900">
-            Create Your Profile
-          </h3>
-          <div className="mt-2 max-w-xl text-sm text-gray-500">
-            <p>Tell us a bit about yourself to complete your account setup.</p>
-          </div>
-          
-          <form className="mt-6 space-y-6" onSubmit={handleSubmit}>
-            {error && (
-              <div className="bg-red-50 border-l-4 border-red-400 p-4">
-                <p className="text-sm text-red-700">{error}</p>
-              </div>
-            )}
+    <div className="min-h-screen bg-white font-sans px-8 sm:px-16 md:px-24 py-10 overflow-hidden flex flex-col">
+      {/* Header / Branding */}
+      <motion.div 
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        onClick={() => navigate('/')} 
+        className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity self-start"
+      >
+        <img src="/image/logo.svg" alt="Likhā Logo" className="w-10 h-10 md:w-12 md:h-12 drop-shadow-sm" />
+        <span className="text-xl md:text-2xl font-black text-[#698864] tracking-[0.25em]">L I K H Â</span>
+      </motion.div>
 
-            <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
-              <div className="sm:col-span-3">
-                <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">
-                  First name
-                </label>
-                <div className="mt-1 relative rounded-md shadow-sm">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <User className="h-4 w-4 text-gray-400" />
-                  </div>
-                  <input
-                    type="text"
-                    name="firstName"
-                    id="firstName"
-                    value={formData.firstName}
-                    onChange={handleChange}
-                    className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md py-2 border text-gray-900 bg-white"
-                    placeholder="John"
-                  />
-                </div>
-              </div>
+      {/* Main Content */}
+      <motion.div 
+        variants={staggerContainer}
+        initial="hidden"
+        animate="visible"
+        className="flex-1 flex flex-col items-center mt-12 lg:mt-20 max-w-5xl mx-auto w-full"
+      >
+        <motion.div variants={fadeUpVariant} className="text-center mb-16">
+          <h1 className="text-4xl md:text-[2.75rem] font-extrabold text-[#52704E] mb-4 tracking-tight">Set up your profile</h1>
+          <p className="text-[#849D80] text-sm md:text-base font-medium leading-relaxed max-w-sm mx-auto">
+            To help others in the app recognize you, take a quick moment to set up your profile.
+          </p>
+        </motion.div>
 
-              <div className="sm:col-span-3">
-                <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">
-                  Last name
-                </label>
-                <div className="mt-1 relative rounded-md shadow-sm">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <User className="h-4 w-4 text-gray-400" />
-                  </div>
-                  <input
-                    type="text"
-                    name="lastName"
-                    id="lastName"
-                    value={formData.lastName}
-                    onChange={handleChange}
-                    className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md py-2 border text-gray-900 bg-white"
-                    placeholder="Doe"
-                  />
-                </div>
-              </div>
+        <form onSubmit={handleSubmit} className="w-full">
+          {error && (
+            <motion.div variants={fadeUpVariant} className="bg-red-50 text-red-600 text-sm p-3 rounded-xl text-center border border-red-100 font-medium mb-8 max-w-md mx-auto">
+              {error}
+            </motion.div>
+          )}
 
+          <div className="flex flex-col md:flex-row gap-12 lg:gap-24 items-start w-full justify-center">
             
+            {/* Left Column: Form Fields */}
+            <div className="w-full md:w-[380px] space-y-6 flex-shrink-0">
+              <motion.div variants={fadeUpVariant} className="space-y-2">
+                <label className="text-[#698864] font-bold text-sm ml-1 block">First name</label>
+                <input
+                  type="text"
+                  name="firstName"
+                  value={formData.firstName}
+                  onChange={handleChange}
+                  required
+                  disabled={isLoading}
+                  placeholder="Enter your first name"
+                  className="w-full bg-[#F4F5F4] text-gray-800 rounded-xl px-5 py-4 focus:outline-none focus:ring-2 focus:ring-[#698864]/30 transition-all font-medium placeholder-gray-400 border-none"
+                />
+              </motion.div>
 
-              <div className="sm:col-span-6">
-                <label htmlFor="profilePicture" className="block text-sm font-medium text-gray-700">
-                  Profile Picture URL
-                </label>
-                <div className="mt-1 relative rounded-md shadow-sm">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <ImageIcon className="h-4 w-4 text-gray-400" />
-                  </div>
-                  <input
-                    type="text"
-                    name="profilePicture"
-                    id="profilePicture"
-                    value={formData.profilePicture}
-                    onChange={handleChange}
-                    className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md py-2 border text-gray-900 bg-white"
-                    placeholder="https://example.com/avatar.jpg"
-                  />
-                </div>
-              </div>
-            </div>
+              <motion.div variants={fadeUpVariant} className="space-y-2">
+                <label className="text-[#698864] font-bold text-sm ml-1 block">Last name</label>
+                <input
+                  type="text"
+                  name="lastName"
+                  value={formData.lastName}
+                  onChange={handleChange}
+                  required
+                  disabled={isLoading}
+                  placeholder="Enter your last name"
+                  className="w-full bg-[#F4F5F4] text-gray-800 rounded-xl px-5 py-4 focus:outline-none focus:ring-2 focus:ring-[#698864]/30 transition-all font-medium placeholder-gray-400 border-none"
+                />
+              </motion.div>
 
-            <div className="pt-5">
-              <div className="flex justify-end">
-                <button
-                  type="button"
-                  className="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
-                  Cancel
-                </button>
+              <motion.div variants={fadeUpVariant} className="space-y-2">
+                <label className="text-[#698864] font-bold text-sm ml-1 block">Age</label>
+                <input
+                  type="number"
+                  name="age"
+                  value={formData.age}
+                  onChange={handleChange}
+                  required
+                  disabled={isLoading}
+                  placeholder="Enter your age"
+                  className="w-full bg-[#F4F5F4] text-gray-800 rounded-xl px-5 py-4 focus:outline-none focus:ring-2 focus:ring-[#698864]/30 transition-all font-medium placeholder-gray-400 border-none"
+                />
+              </motion.div>
+
+              <motion.div variants={fadeUpVariant} className="pt-4 hidden md:block">
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="ml-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                  className="w-full bg-[#7C9A76] hover:bg-[#698864] text-white font-bold py-4 rounded-xl transition-all shadow-md hover:shadow-lg disabled:opacity-70 flex justify-center items-center text-lg hover:-translate-y-0.5 active:translate-y-0"
                 >
-                  <Save className="h-4 w-4 mr-2" />
-                  {isLoading ? 'Saving...' : 'Save Profile'}
+                  {isLoading ? 'Saving...' : 'Done'}
                 </button>
-              </div>
+              </motion.div>
             </div>
-          </form>
-        </div>
-      </div>
+
+            {/* Right Column: Profile Picture Upload */}
+            <motion.div variants={fadeUpVariant} className="w-full md:w-[420px] flex-shrink-0 flex flex-col items-center md:mt-2">
+              <div className="w-full aspect-[4/3] bg-[#D9D9D9] rounded-xl flex items-center justify-center cursor-pointer hover:bg-[#D0D0D0] transition-colors relative group shadow-inner">
+                <input 
+                  type="file" 
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
+                  accept="image/*"
+                />
+                {/* SVG Icon matching Figma design roughly */}
+                <svg width="80" height="80" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="opacity-90">
+                  <path d="M18 10C13.5817 10 10 13.5817 10 18V75H18V18C18 18 18 18 18 18H75V10H18Z" fill="white"/>
+                  <rect x="25" y="25" width="65" height="50" rx="4" fill="white"/>
+                  <circle cx="57.5" cy="40" r="7.5" fill="#D9D9D9"/>
+                  <path d="M38.5 62C38.5 54.5442 44.5442 48.5 52 48.5H63C70.4558 48.5 76.5 54.5442 76.5 62V65H38.5V62Z" fill="#D9D9D9"/>
+                </svg>
+              </div>
+              <p className="mt-5 text-center text-[#52704E] font-medium text-sm md:text-base max-w-[280px] leading-snug">
+                Drag and drop your profile picture here, or click to upload
+              </p>
+            </motion.div>
+
+          </div>
+
+          {/* Mobile Done Button (Shows below upload box on small screens) */}
+          <motion.div variants={fadeUpVariant} className="pt-10 block md:hidden w-full max-w-[380px] mx-auto">
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full bg-[#7C9A76] hover:bg-[#698864] text-white font-bold py-4 rounded-xl transition-all shadow-md hover:shadow-lg disabled:opacity-70 flex justify-center items-center text-lg hover:-translate-y-0.5 active:translate-y-0"
+            >
+              {isLoading ? 'Saving...' : 'Done'}
+            </button>
+          </motion.div>
+        </form>
+      </motion.div>
     </div>
   );
 }
