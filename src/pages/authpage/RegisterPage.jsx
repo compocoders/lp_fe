@@ -47,7 +47,7 @@ export default function RegisterPage() {
       localStorage.setItem('user', JSON.stringify(response.user));
       
       console.log('Registration successful:', response);
-      navigate('/'); // Redirect to dashboard
+      navigate('/createProfile'); // Redirect to dashboard
     } catch (err) {
       console.error('Registration failed:', err);
       // Display error to the user

@@ -2,12 +2,12 @@ import React, { useState } from 'react';
 import { createProfile } from '../../api/profile.api';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-
+import {useEffect} from 'react';
+import {profilepage} from '../../api/profile.api';
 const fadeUpVariant = {
   hidden: { opacity: 0, y: 20 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } }
 };
-
 const staggerContainer = {
   hidden: { opacity: 0 },
   visible: {
@@ -47,6 +47,22 @@ export default function CreateProfile() {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+  const checkProfile = async () => {
+    try {
+      const profile = await profilepage();
+      if (profile) {
+        navigate('/'); // Redirect to dashboard if profile exists
+      }
+    } catch (err) {
+      console.error('Error checking profile:', err);
+    }
+  };
+
+  checkProfile();
+}, [navigate]);
+
 
   return (
     <div className="min-h-screen bg-white font-sans px-8 sm:px-16 md:px-24 py-10 overflow-hidden flex flex-col">
