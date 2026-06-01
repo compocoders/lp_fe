@@ -1,9 +1,7 @@
-import React, { useState } from 'react';
-import { createProfile } from '../../api/profile.api';
+import React, { useState, useEffect } from 'react';
+import { createProfile, profilepage, uploadProfilePicture } from '../../api/profile.api';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import {useEffect} from 'react';
-import {profilepage} from '../../api/profile.api';
 const fadeUpVariant = {
   hidden: { opacity: 0, y: 20 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } }
@@ -19,16 +17,25 @@ const staggerContainer = {
 export default function CreateProfile() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    firstName: '',
+    firstName: '', 
     lastName: '',
     age: '',
-    profilePicture: ''
   });
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-
+ 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setSelectedFile(file);
+      setPreviewUrl(URL.createObjectURL(file));
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -37,12 +44,22 @@ export default function CreateProfile() {
     setError(null);
     
     try {
-      // Assuming backend expects age and will map it or process it
-      const response = await createProfile(formData);
+      const { age, ...profileData } = formData;
+      let submitData = profileData;
+
+      if (selectedFile) {
+        submitData = new FormData();
+        Object.keys(profileData).forEach(key => submitData.append(key, profileData[key]));
+        submitData.append('image', selectedFile);
+      }
+
+      const response = await createProfile(submitData);
+
       console.log('Profile created:', response);
       navigate('/'); 
     } catch (err) {
-      setError('Failed to create profile. Please try again.');
+      const errorMessage = err.response?.data?.message || 'Failed to create profile. Please try again.';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -57,6 +74,10 @@ export default function CreateProfile() {
       }
     } catch (err) {
       console.error('Error checking profile:', err);
+      //return to login if error is 401 (unauthorized), otherwise just stay on the page and let them create profile
+      if (err.response?.status === 401) {
+        navigate('/login');
+      }
     }
   };
 
@@ -158,19 +179,23 @@ export default function CreateProfile() {
 
             {/* Right Column: Profile Picture Upload */}
             <motion.div variants={fadeUpVariant} className="w-full md:w-[420px] flex-shrink-0 flex flex-col items-center md:mt-2">
-              <div className="w-full aspect-[4/3] bg-[#D9D9D9] rounded-xl flex items-center justify-center cursor-pointer hover:bg-[#D0D0D0] transition-colors relative group shadow-inner">
+              <div className="w-full aspect-[4/3] bg-[#D9D9D9] rounded-xl flex items-center justify-center cursor-pointer hover:bg-[#D0D0D0] transition-colors relative group shadow-inner overflow-hidden">
                 <input 
                   type="file" 
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
                   accept="image/*"
+                  onChange={handleFileChange}
                 />
-                {/* SVG Icon matching Figma design roughly */}
-                <svg width="80" height="80" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="opacity-90">
-                  <path d="M18 10C13.5817 10 10 13.5817 10 18V75H18V18C18 18 18 18 18 18H75V10H18Z" fill="white"/>
-                  <rect x="25" y="25" width="65" height="50" rx="4" fill="white"/>
-                  <circle cx="57.5" cy="40" r="7.5" fill="#D9D9D9"/>
-                  <path d="M38.5 62C38.5 54.5442 44.5442 48.5 52 48.5H63C70.4558 48.5 76.5 54.5442 76.5 62V65H38.5V62Z" fill="#D9D9D9"/>
-                </svg>
+                {previewUrl ? (
+                  <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
+                ) : (
+                  <svg width="80" height="80" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="opacity-90">
+                    <path d="M18 10C13.5817 10 10 13.5817 10 18V75H18V18C18 18 18 18 18 18H75V10H18Z" fill="white"/>
+                    <rect x="25" y="25" width="65" height="50" rx="4" fill="white"/>
+                    <circle cx="57.5" cy="40" r="7.5" fill="#D9D9D9"/>
+                    <path d="M38.5 62C38.5 54.5442 44.5442 48.5 52 48.5H63C70.4558 48.5 76.5 54.5442 76.5 62V65H38.5V62Z" fill="#D9D9D9"/>
+                  </svg>
+                )}
               </div>
               <p className="mt-5 text-center text-[#52704E] font-medium text-sm md:text-base max-w-[280px] leading-snug">
                 Drag and drop your profile picture here, or click to upload
