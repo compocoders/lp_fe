@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link, } from 'react-router-dom';
 import { login } from '../../api/auth.api';
 import { motion } from 'framer-motion';
 
@@ -27,7 +27,13 @@ export default function LoginPage() {
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-
+  useEffect(() => {
+    // Check if user is already logged in
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      navigate('/dashboard'); // Redirect to dashboard if user is already logged in
+    }
+  }, [navigate]);
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
