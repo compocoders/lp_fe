@@ -46,7 +46,7 @@ export default function LoginPage() {
       localStorage.setItem('user', JSON.stringify(response.user));
       
       console.log('Login successful:', response);
-      navigate('/'); // Redirect to dashboard
+      navigate('/dashboard'); // Redirect to dashboard
     } catch (err) {
       console.error('Login failed:', err);
       // Display error to the user

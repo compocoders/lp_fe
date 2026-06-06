@@ -21,7 +21,7 @@ export default function CreateProfile() {
     lastName: '',
     age: '',
   });
-  const [selectedFile, setSelectedFile] = useState(null);
+  const [profilePicture, setprofilePicture] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -33,7 +33,7 @@ export default function CreateProfile() {
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      setSelectedFile(file);
+      setprofilePicture(file);
       setPreviewUrl(URL.createObjectURL(file));
     }
   };
@@ -47,16 +47,16 @@ export default function CreateProfile() {
       const { age, ...profileData } = formData;
       let submitData = profileData;
 
-      if (selectedFile) {
+      if (profilePicture) {
         submitData = new FormData();
         Object.keys(profileData).forEach(key => submitData.append(key, profileData[key]));
-        submitData.append('image', selectedFile);
+        submitData.append('profilePicture', profilePicture);
       }
 
       const response = await createProfile(submitData);
 
       console.log('Profile created:', response);
-      navigate('/'); 
+      navigate('/dashboard'); 
     } catch (err) {
       const errorMessage = err.response?.data?.message || 'Failed to create profile. Please try again.';
       setError(errorMessage);
