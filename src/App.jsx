@@ -5,6 +5,11 @@ import LoginPage from './pages/authpage/LoginPage';
 import RegisterPage from './pages/authpage/RegisterPage';
 import CreateProfile from './pages/profilePage/CreateProfile';
 import Mainpage from './pages/dashboard/Mainpage';
+import DashboardHome from './pages/dashboard/DashboardHome';
+import ClassroomDetail from './pages/dashboard/ClassroomDetail';
+import JoinClassroomPage from './pages/dashboard/JoinClassroomPage';
+import ProtectedRoute from './components/common/ProtectedRoute';
+
 function App() {
   return (
     <Router>
@@ -12,12 +17,18 @@ function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path='/login' element={<LoginPage />} />
         <Route path='/register' element={<RegisterPage />} />
-        <Route path='/createProfile' element={<CreateProfile />} />
         
-        {/* <Route path="/dashboard" element={<Dashboard />} /> */}
-        
-        <Route path="/dashboard" element={<Mainpage/>} />
-
+        <Route element={<ProtectedRoute />}>
+          <Route path='/createProfile' element={<CreateProfile />} />
+          
+          {/* <Route path="/dashboard" element={<Dashboard />} /> */}
+          
+          <Route path="/dashboard" element={<Mainpage/>}>
+            <Route index element={<DashboardHome />} />
+            <Route path="classroom/:code" element={<ClassroomDetail />} />
+          </Route>
+          <Route path="/join/:token" element={<JoinClassroomPage />} />
+        </Route>
       </Routes>
     </Router>
   );
