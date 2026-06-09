@@ -37,7 +37,9 @@ const Mainpage = () => {
         setUser(data);
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
-        handleLogout();
+        if (error?.response?.status === 401 || error?.response?.status === 403) {
+          handleLogout();
+        }
       }
     };
 

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { register } from '../../api/auth.api';
 import { motion } from 'framer-motion';
+import useAuthStore from '../../store/auth.store';
 
 const fadeUpVariant = {
   hidden: { opacity: 0, y: 20 },
@@ -28,6 +29,7 @@ export default function RegisterPage() {
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const setAuth = useAuthStore((state) => state.setAuth);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -45,6 +47,9 @@ export default function RegisterPage() {
       
       // Store token in cookies and user in native localStorage
       localStorage.setItem('user', JSON.stringify(response.user));
+      if (response.token) {
+        setAuth(response.user, response.token);
+      }
       
       console.log('Registration successful:', response);
       navigate('/createProfile'); // Redirect to dashboard

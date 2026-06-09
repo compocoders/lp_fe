@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, } from 'react-router-dom';
 import { login } from '../../api/auth.api';
 import { motion } from 'framer-motion';
+import useAuthStore from '../../store/auth.store';
 
 const fadeUpVariant = {
   hidden: { opacity: 0, y: 20 },
@@ -27,6 +28,8 @@ export default function LoginPage() {
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const setAuth = useAuthStore((state) => state.setAuth);
+
   useEffect(() => {
     // Check if user is already logged in
     const storedUser = localStorage.getItem('user');
@@ -44,6 +47,9 @@ export default function LoginPage() {
       
       // Store token in cookies and user in native localStorage
       localStorage.setItem('user', JSON.stringify(response.user));
+      if (response.token) {
+        setAuth(response.user, response.token);
+      }
       
       console.log('Login successful:', response);
       navigate('/dashboard'); // Redirect to dashboard
