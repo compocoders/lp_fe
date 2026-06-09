@@ -14,6 +14,14 @@ const Mainpage = () => {
   const navigate = useNavigate();
   const [user, setUser] = React.useState(null);
 
+  const handleLogout = React.useCallback(async () => {
+    try { await logoutApi(); } catch (e) {}
+    localStorage.removeItem('user');
+    localStorage.removeItem('token');
+    try { logout(); } catch (e) {}
+    window.location.href = '/login';
+  }, [logout]);
+
   useEffect(() => {
     if (!localStorage.getItem('user')) {
       navigate('/login');
@@ -29,19 +37,12 @@ const Mainpage = () => {
         setUser(data);
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
+        handleLogout();
       }
     };
 
     fetchData();
-  }, []);
-
-  const handleLogout = async () => {
-    try { await logoutApi(); } catch (e) {}
-    localStorage.removeItem('user');
-    localStorage.removeItem('token');
-    try { logout(); } catch (e) {}
-    window.location.href = '/login';
-  };
+  }, [handleLogout]);
 
   return (
     <div className="flex h-screen bg-[#517559] overflow-hidden relative">
