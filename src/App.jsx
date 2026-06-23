@@ -8,6 +8,7 @@ import Mainpage from './pages/dashboard/Mainpage';
 import DashboardHome from './pages/dashboard/DashboardHome';
 import ClassroomDetail from './pages/dashboard/ClassroomDetail';
 import JoinClassroomPage from './pages/dashboard/JoinClassroomPage';
+import Settings from './pages/dashboard/Settings';
 import ProtectedRoute from './components/common/ProtectedRoute';
 
 function App() {
@@ -26,6 +27,7 @@ function App() {
           <Route path="/dashboard" element={<Mainpage/>}>
             <Route index element={<DashboardHome />} />
             <Route path="classroom/:code" element={<ClassroomDetail />} />
+            <Route path="settings" element={<Settings />} />
           </Route>
           <Route path="/join/:token" element={<JoinClassroomPage />} />
         </Route>

@@ -1,7 +1,25 @@
 import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Home, LineChart, Users, CheckSquare, Settings, ChevronUp, ChevronDown, ClipboardList, X, LogOut } from 'lucide-react';
+import {
+  Home, Users, CheckSquare, Settings, ChevronDown,
+  ClipboardList, X, LogOut, BookOpen, GraduationCap, Plus
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+
+// Auto-assign a color from the landing page palette based on class name
+const CLASS_COLORS = [
+  { bg: 'bg-[#5D7C59]', text: 'text-white' },
+  { bg: 'bg-[#4A6447]', text: 'text-white' },
+  { bg: 'bg-[#7A9A7B]', text: 'text-white' },
+  { bg: 'bg-[#FFC700]', text: 'text-gray-900' },
+  { bg: 'bg-[#2d6a4f]', text: 'text-white' },
+  { bg: 'bg-[#52796f]', text: 'text-white' },
+];
+
+const getClassColor = (name = '') => {
+  const idx = name.charCodeAt(0) % CLASS_COLORS.length;
+  return CLASS_COLORS[idx];
+};
 
 const Sidebar = ({ onClose, onLogout, dashboardData }) => {
   const navigate = useNavigate();
@@ -10,206 +28,194 @@ const Sidebar = ({ onClose, onLogout, dashboardData }) => {
   const [openGroups, setOpenGroups] = useState({
     classes: true,
     teaching: true,
-    todo: true,
+    todo: false,
   });
 
   const toggleGroup = (group) => {
-    setOpenGroups(prev => ({
-      ...prev,
-      [group]: !prev[group]
-    }));
+    setOpenGroups(prev => ({ ...prev, [group]: !prev[group] }));
   };
 
-  const navItemClass = "flex items-center px-4 py-3 rounded-[20px] cursor-pointer transition-colors text-white no-underline gap-3 text-base font-semibold hover:bg-white/10";
-  const activeNavItemClass = "bg-[#89a88c]";
+  const NavItem = ({ to, end, icon: Icon, children }) => (
+    <NavLink
+      to={to}
+      end={end}
+      onClick={() => onClose && onClose()}
+      className={({ isActive }) =>
+        `flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 no-underline relative
+        ${isActive
+          ? 'bg-[#4A6447]/10 dark:bg-[#5D7C59]/20 text-[#4A6447] dark:text-[#7A9A7B] before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-5 before:w-1 before:bg-[#4A6447] dark:before:bg-[#7A9A7B] before:rounded-r-full'
+          : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-[#4A6447] dark:hover:text-[#7A9A7B]'
+        }`
+      }
+    >
+      <Icon size={19} strokeWidth={2} />
+      {children}
+    </NavLink>
+  );
+
+  const SectionHeader = ({ label, icon: Icon, groupKey }) => (
+    <button
+      onClick={() => toggleGroup(groupKey)}
+      className="w-full flex items-center justify-between px-4 py-2 text-xs font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 hover:text-[#4A6447] dark:hover:text-[#7A9A7B] transition-colors rounded-lg hover:bg-gray-50 dark:hover:bg-white/5"
+    >
+      <span className="flex items-center gap-2">
+        <Icon size={14} strokeWidth={2.5} />
+        {label}
+      </span>
+      <motion.div
+        animate={{ rotate: openGroups[groupKey] ? 180 : 0 }}
+        transition={{ duration: 0.25 }}
+      >
+        <ChevronDown size={13} strokeWidth={2.5} />
+      </motion.div>
+    </button>
+  );
 
   return (
-    <div className="w-[260px] bg-[#517559] text-white h-screen flex flex-col py-8 px-5 box-border font-sans shrink-0 overflow-hidden relative">
-      <div className="flex items-center justify-between mb-6 shrink-0">
-        <div className="text-[28px] font-extrabold tracking-[4px] text-center w-full drop-shadow-md">
-          LIKHÂ
+    <div className="w-[260px] bg-white dark:bg-[#1A211A] h-screen flex flex-col border-r border-gray-100 dark:border-white/10 shadow-sm shrink-0 overflow-hidden relative transition-colors duration-200">
+      {/* Logo */}
+      <div className="flex items-center justify-between px-5 py-5 shrink-0 border-b border-gray-50 dark:border-white/5">
+        <div
+          className="flex items-center gap-2.5 cursor-pointer"
+          onClick={() => { navigate('/dashboard'); onClose && onClose(); }}
+        >
+          <img
+            src="/image/logo.svg"
+            alt="Likhā Logo"
+            className="w-8 h-8"
+            onError={(e) => { e.target.style.display = 'none'; }}
+          />
+          <span className="text-xl font-black text-[#4A6447] dark:text-[#7A9A7B] tracking-[0.18em]">LIKHÂ</span>
         </div>
         {onClose && (
-          <button 
+          <button
             onClick={onClose}
-            className="md:hidden p-1 absolute right-4 top-6 text-white hover:bg-white/10 rounded-md"
+            className="md:hidden p-1.5 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg transition-colors"
           >
-            <X size={24} />
+            <X size={18} />
           </button>
         )}
       </div>
 
-      <div className="flex flex-col gap-4 flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] pb-2">
-        <NavLink 
-          to="/dashboard" 
-          end
-          className={({ isActive }) => `${navItemClass} ${isActive ? activeNavItemClass : ''}`}
-        >
-          <Home size={22} strokeWidth={2.5} />
-          Home
-        </NavLink>
+      {/* Nav content — scrollable */}
+      <div className="flex flex-col flex-1 overflow-y-auto py-4 px-3 gap-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
 
-        <div className="mb-2">
-          <div 
-            className="flex items-center justify-between px-4 py-2 cursor-pointer text-white text-base font-bold rounded-lg transition-colors hover:bg-white/10"
-            onClick={() => toggleGroup('classes')}
-          >
-            <div className="flex items-center gap-3">
-              <LineChart size={22} strokeWidth={2} />
-              Classes
-            </div>
+        {/* Home */}
+        <NavItem to="/dashboard" end icon={Home}>Home</NavItem>
+
+        {/* Divider */}
+        <div className="my-2" />
+
+        {/* Enrolled Classes */}
+        <SectionHeader label="Enrolled" icon={BookOpen} groupKey="classes" />
+        <AnimatePresence initial={false}>
+          {openGroups.classes && (
             <motion.div
-              initial={false}
-              animate={{ rotate: openGroups.classes ? 180 : 0 }}
-              transition={{ duration: 0.3 }}
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.25 }}
+              className="overflow-hidden"
             >
-              <ChevronDown size={18} strokeWidth={2.5} />
-            </motion.div>
-          </div>
-          <AnimatePresence initial={false}>
-            {openGroups.classes && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.3 }}
-                className="overflow-hidden"
-              >
-                <div className="flex flex-col pl-9 mt-2 gap-3 pb-2">
-                  {enrolledClasses.length > 0 ? enrolledClasses.map(cls => (
-                    <div 
-                      key={cls.id} 
-                      onClick={() => { navigate(`/dashboard/classroom/${cls.roomCode}`); if (onClose) onClose(); }}
-                      className="flex items-start gap-3 text-[13px] leading-snug text-white/90 cursor-pointer py-1 pr-2 rounded-md transition-colors hover:text-white"
+              <div className="flex flex-col gap-0.5 mt-1 mb-2">
+                {enrolledClasses.length > 0 ? enrolledClasses.map(cls => {
+                  const color = getClassColor(cls.name);
+                  return (
+                    <button
+                      key={cls.id}
+                      onClick={() => { navigate(`/dashboard/classroom/${cls.roomCode}`); onClose && onClose(); }}
+                      className="flex items-center gap-3 px-4 py-2 rounded-xl text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-[#4A6447] dark:hover:text-[#7A9A7B] transition-all text-left w-full group"
                     >
-                      <div className="w-[22px] h-[22px] rounded-full bg-white text-[#517559] flex items-center justify-center font-extrabold text-[11px] shrink-0 mt-[2px] shadow-sm uppercase">
+                      <div className={`w-6 h-6 rounded-lg ${color.bg} ${color.text} flex items-center justify-center font-bold text-[10px] uppercase shrink-0 shadow-sm`}>
                         {cls.name.charAt(0)}
                       </div>
-                      <span className="truncate">{cls.name}</span>
-                    </div>
-                  )) : (
-                    <div className="text-white/50 text-xs italic px-2">No classes yet</div>
-                  )}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-
-        <div className="mb-2">
-          <div 
-            className="flex items-center justify-between px-4 py-2 cursor-pointer text-white text-base font-bold rounded-lg transition-colors hover:bg-white/10"
-            onClick={() => toggleGroup('teaching')}
-          >
-            <div className="flex items-center gap-3">
-              <Users size={22} strokeWidth={2} />
-              Teaching
-            </div>
-            <motion.div
-              initial={false}
-              animate={{ rotate: openGroups.teaching ? 180 : 0 }}
-              transition={{ duration: 0.3 }}
-            >
-              <ChevronDown size={18} strokeWidth={2.5} />
+                      <span className="truncate font-medium">{cls.name}</span>
+                    </button>
+                  );
+                }) : (
+                  <p className="text-xs text-gray-400 italic px-4 py-1.5">No enrolled classes yet</p>
+                )}
+              </div>
             </motion.div>
-          </div>
-          <AnimatePresence initial={false}>
-            {openGroups.teaching && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.3 }}
-                className="overflow-hidden"
-              >
-                <div className="flex flex-col pl-9 mt-2 gap-3 pb-2">
-                  {teachingClasses.length > 0 ? teachingClasses.map(cls => (
-                    <div 
-                      key={cls.id} 
-                      onClick={() => { navigate(`/dashboard/classroom/${cls.roomCode}`); if (onClose) onClose(); }}
-                      className="flex items-start gap-3 text-[13px] leading-snug text-white/90 cursor-pointer py-1 pr-2 rounded-md transition-colors hover:text-white"
+          )}
+        </AnimatePresence>
+
+        {/* Teaching Classes */}
+        <SectionHeader label="Teaching" icon={GraduationCap} groupKey="teaching" />
+        <AnimatePresence initial={false}>
+          {openGroups.teaching && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.25 }}
+              className="overflow-hidden"
+            >
+              <div className="flex flex-col gap-0.5 mt-1 mb-2">
+                {teachingClasses.length > 0 ? teachingClasses.map(cls => {
+                  const color = getClassColor(cls.name);
+                  return (
+                    <button
+                      key={cls.id}
+                      onClick={() => { navigate(`/dashboard/classroom/${cls.roomCode}`); onClose && onClose(); }}
+                      className="flex items-center gap-3 px-4 py-2 rounded-xl text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-[#4A6447] dark:hover:text-[#7A9A7B] transition-all text-left w-full"
                     >
-                      <div className="w-[22px] h-[22px] rounded-full bg-white text-[#517559] flex items-center justify-center font-extrabold text-[11px] shrink-0 mt-[2px] shadow-sm uppercase">
+                      <div className={`w-6 h-6 rounded-lg ${color.bg} ${color.text} flex items-center justify-center font-bold text-[10px] uppercase shrink-0 shadow-sm`}>
                         {cls.name.charAt(0)}
                       </div>
-                      <span className="truncate">{cls.name}</span>
-                    </div>
-                  )) : (
-                    <div className="text-white/50 text-xs italic px-2">Not teaching any classes</div>
-                  )}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-
-        <div className="mb-2">
-          <div 
-            className="flex items-center justify-between px-4 py-2 cursor-pointer text-white text-base font-bold rounded-lg transition-colors hover:bg-white/10"
-            onClick={() => toggleGroup('todo')}
-          >
-            <div className="flex items-center gap-3">
-              <CheckSquare size={22} strokeWidth={2} />
-              To-do
-            </div>
-            <motion.div
-              initial={false}
-              animate={{ rotate: openGroups.todo ? 180 : 0 }}
-              transition={{ duration: 0.3 }}
-            >
-              <ChevronDown size={18} strokeWidth={2.5} />
+                      <span className="truncate font-medium">{cls.name}</span>
+                    </button>
+                  );
+                }) : (
+                  <p className="text-xs text-gray-400 italic px-4 py-1.5">Not teaching any classes</p>
+                )}
+              </div>
             </motion.div>
-          </div>
-          <AnimatePresence initial={false}>
-            {openGroups.todo && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.3 }}
-                className="overflow-hidden"
-              >
-                <div className="flex flex-col pl-9 mt-2 gap-4 pb-2">
-                  <div className="flex items-start gap-3 text-[13px] cursor-pointer py-1 pr-2 rounded-md transition-colors hover:text-white">
-                    <div className="w-[22px] h-[22px] rounded-full border-[1.5px] border-white text-white flex items-center justify-center bg-transparent mt-[2px] shrink-0">
-                      <ClipboardList size={12} strokeWidth={2.5} />
+          )}
+        </AnimatePresence>
+
+        {/* To-Do */}
+        <SectionHeader label="To-Do" icon={CheckSquare} groupKey="todo" />
+        <AnimatePresence initial={false}>
+          {openGroups.todo && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.25 }}
+              className="overflow-hidden"
+            >
+              <div className="flex flex-col gap-1 mt-1 mb-2 px-4">
+                {[
+                  { title: 'Performance Task', sub: 'BSIT 3G - IT ELEC', date: 'June 9, 2027' },
+                  { title: 'Performance Task', sub: 'BSIT 3G - IT ELEC', date: 'June 9, 2027' },
+                ].map((todo, i) => (
+                  <div key={i} className="flex items-start gap-3 py-2 cursor-pointer group">
+                    <div className="w-5 h-5 rounded-md border-2 border-[#5D7C59] dark:border-[#7A9A7B] shrink-0 mt-0.5 flex items-center justify-center group-hover:bg-[#5D7C59]/10 dark:group-hover:bg-[#7A9A7B]/20 transition-colors">
+                      <ClipboardList size={10} className="text-[#5D7C59] dark:text-[#7A9A7B]" strokeWidth={2.5} />
                     </div>
-                    <div className="flex flex-col leading-tight">
-                      <span className="font-bold text-white text-[13px]">Performance Task</span>
-                      <span className="text-[11px] text-white/80 mt-[2px]">BSIT 3G - IT ELEC<br/>Deadline - June 9 2027</span>
+                    <div className="leading-tight">
+                      <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">{todo.title}</p>
+                      <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">{todo.sub}</p>
+                      <p className="text-[10px] text-[#FFC700] font-semibold mt-0.5">Due {todo.date}</p>
                     </div>
                   </div>
-                  <div className="flex items-start gap-3 text-[13px] cursor-pointer py-1 pr-2 rounded-md transition-colors hover:text-white">
-                    <div className="w-[22px] h-[22px] rounded-full border-[1.5px] border-white text-white flex items-center justify-center bg-transparent mt-[2px] shrink-0">
-                      <ClipboardList size={12} strokeWidth={2.5} />
-                    </div>
-                    <div className="flex flex-col leading-tight">
-                      <span className="font-bold text-white text-[13px]">Performance Task</span>
-                      <span className="text-[11px] text-white/80 mt-[2px]">BSIT 3G - IT ELEC<br/>Deadline - June 9 2027</span>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
-      <div className="mt-4 pt-4 flex flex-col gap-2 shrink-0 border-t border-white/10 relative z-10 bg-[#517559]">
-        <NavLink 
-          to="/dashboard/settings" 
-          className={({ isActive }) => `${navItemClass} ${isActive ? activeNavItemClass : ''}`}
-        >
-          <Settings size={22} strokeWidth={2.5} />
-          Settings
-        </NavLink>
-        
+      {/* Footer */}
+      <div className="px-3 py-4 border-t border-gray-100 dark:border-white/10 shrink-0 flex flex-col gap-1 bg-white dark:bg-[#1A211A] transition-colors duration-200">
+        <NavItem to="/dashboard/settings" icon={Settings}>Settings</NavItem>
         {onLogout && (
-          <button 
+          <button
             onClick={onLogout}
-            className={`${navItemClass} bg-transparent border-none text-left w-full hover:bg-white/10 hover:text-red-100 transition-colors mt-2`}
+            className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold text-gray-500 dark:text-gray-400 hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200 w-full text-left"
           >
-            <LogOut size={22} strokeWidth={2.5} />
+            <LogOut size={19} strokeWidth={2} />
             Logout
           </button>
         )}

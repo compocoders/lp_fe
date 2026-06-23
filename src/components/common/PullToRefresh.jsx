@@ -106,7 +106,7 @@ const PullToRefresh = ({ onRefresh, children, className }) => {
         <motion.div
           animate={{ rotate: isRefreshing ? 360 : (pullY * 3) }}
           transition={{ repeat: isRefreshing ? Infinity : 0, duration: 1, ease: "linear" }}
-          className="text-[#517559] bg-white rounded-full p-2 shadow-md flex items-center justify-center mt-2"
+        className="text-[#517559] dark:text-[#7A9A7B] bg-white dark:bg-[#1A211A] rounded-full p-2 shadow-md flex items-center justify-center mt-2 border border-transparent dark:border-white/10"
           style={{ opacity: Math.min(pullY / 60, 1) }}
         >
           <RefreshCw size={20} strokeWidth={2.5} />
@@ -117,7 +117,7 @@ const PullToRefresh = ({ onRefresh, children, className }) => {
       <motion.div
         animate={{ y: pullY }}
         transition={{ type: "spring", stiffness: 300, damping: 20 }}
-        className={`min-h-full relative z-10 bg-[#d9e2d5] ${pullY > 0 ? 'select-none touch-none' : ''}`} // Matches Dashboard background
+        className={`min-h-full relative z-10 bg-[#d9e2d5] dark:bg-[#121612] transition-colors duration-200 ${pullY > 0 ? 'select-none touch-none' : ''}`}
       >
         {children}
       </motion.div>

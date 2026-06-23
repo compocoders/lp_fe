@@ -39,16 +39,16 @@ const JoinClassroomPage = () => {
     }, []);
 
     return (
-        <div className="min-h-screen bg-[#f0f5f1] flex flex-col items-center justify-center p-4">
-            <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-8 border border-[#517559]/20">
-                <div className="w-16 h-16 bg-[#517559]/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                    <Lock size={32} className="text-[#517559]" />
+        <div className="min-h-screen bg-[#f0f5f1] dark:bg-[#121612] flex flex-col items-center justify-center p-4 transition-colors duration-200">
+            <div className="bg-white dark:bg-[#1A211A] rounded-2xl shadow-xl max-w-md w-full p-8 border border-[#517559]/20 dark:border-white/10 transition-colors duration-200">
+                <div className="w-16 h-16 bg-[#517559]/10 dark:bg-[#5D7C59]/20 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                    <Lock size={32} className="text-[#517559] dark:text-[#7A9A7B]" />
                 </div>
-                <h1 className="text-2xl font-bold text-center text-[#2d3a2e] mb-2">Join Classroom</h1>
-                <p className="text-center text-[#6b7c6e] mb-8">You have been invited to join a classroom.</p>
+                <h1 className="text-2xl font-bold text-center text-[#2d3a2e] dark:text-white mb-2">Join Classroom</h1>
+                <p className="text-center text-[#6b7c6e] dark:text-gray-400 mb-8">You have been invited to join a classroom.</p>
 
                 {error && (
-                    <div className="bg-red-50 text-red-600 p-4 rounded-xl mb-6 text-sm border border-red-100">
+                    <div className="bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 p-4 rounded-xl mb-6 text-sm border border-red-100 dark:border-red-500/20">
                         {error}
                     </div>
                 )}
@@ -56,20 +56,20 @@ const JoinClassroomPage = () => {
                 {needsPassword && (
                     <form onSubmit={handleJoin} className="flex flex-col gap-4">
                         <div>
-                            <label className="text-sm font-semibold text-[#517559] uppercase tracking-wider mb-2 block">Classroom Password</label>
+                            <label className="text-sm font-semibold text-[#517559] dark:text-[#7A9A7B] uppercase tracking-wider mb-2 block">Classroom Password</label>
                             <input
                                 type="password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 placeholder="Enter classroom password"
-                                className="w-full px-4 py-3 rounded-xl border-2 border-[#517559]/20 focus:border-[#517559] outline-none transition-colors text-[#2d3a2e]"
+                                className="w-full px-4 py-3 bg-[#FAFCFA] dark:bg-[#232B23] rounded-xl border-2 border-[#517559]/20 dark:border-white/10 focus:border-[#517559] dark:focus:border-[#7A9A7B] outline-none transition-all text-[#2d3a2e] dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500"
                                 autoFocus
                             />
                         </div>
                         <button
                             type="submit"
                             disabled={isLoading}
-                            className="w-full bg-[#517559] hover:bg-[#3d5e43] text-white font-bold py-3 px-4 rounded-xl transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 flex items-center justify-center gap-2"
+                            className="w-full bg-[#517559] hover:bg-[#3d5e43] text-white font-bold py-3 px-4 rounded-xl transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 flex items-center justify-center gap-2 border-none cursor-pointer"
                         >
                             {isLoading ? <Loader2 size={20} className="animate-spin" /> : 'Join Room'}
                         </button>
@@ -78,14 +78,14 @@ const JoinClassroomPage = () => {
 
                 {!needsPassword && isLoading && (
                     <div className="flex flex-col items-center justify-center gap-4 py-8">
-                        <Loader2 size={32} className="animate-spin text-[#517559]" />
-                        <p className="text-[#6b7c6e] font-medium">Joining classroom...</p>
+                        <Loader2 size={32} className="animate-spin text-[#517559] dark:text-[#7A9A7B]" />
+                        <p className="text-[#6b7c6e] dark:text-gray-400 font-medium">Joining classroom...</p>
                     </div>
                 )}
                 
                 <button 
                     onClick={() => navigate('/dashboard')}
-                    className="w-full mt-4 bg-transparent hover:bg-black/5 text-[#6b7c6e] font-bold py-3 px-4 rounded-xl transition-colors cursor-pointer border-none"
+                    className="w-full mt-4 bg-transparent hover:bg-black/5 dark:hover:bg-white/5 text-[#6b7c6e] dark:text-gray-400 font-bold py-3 px-4 rounded-xl transition-colors cursor-pointer border-none"
                 >
                     Cancel
                 </button>
