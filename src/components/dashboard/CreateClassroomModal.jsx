@@ -3,6 +3,24 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Book, AlignLeft, Shield, Lock, Loader2, AlertCircle, ChevronDown } from 'lucide-react';
 import { createClassroom } from '../../api/classroom.api';
 
+const InputField = ({ label, icon: Icon, type = 'text', placeholder, value, onChange }) => (
+  <div className="flex flex-col gap-1.5">
+    <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 ml-0.5">{label}</label>
+    <div className="relative flex items-center">
+      <div className="absolute left-3.5 text-gray-400 pointer-events-none">
+        <Icon size={16} strokeWidth={2} />
+      </div>
+      <input
+        type={type}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        className="w-full bg-[#FAFCFA] dark:bg-[#232B23] border border-gray-200 dark:border-white/10 text-gray-800 dark:text-gray-200 rounded-xl py-3 pl-10 pr-4 outline-none focus:border-[#5D7C59] dark:focus:border-[#7A9A7B] focus:ring-2 focus:ring-[#5D7C59]/15 transition-all font-medium placeholder:text-gray-400 dark:placeholder:text-gray-500 placeholder:font-normal text-sm"
+      />
+    </div>
+  </div>
+);
+
 const CreateClassroomModal = ({ isOpen, onClose, onSuccess }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -41,24 +59,6 @@ const CreateClassroomModal = ({ isOpen, onClose, onSuccess }) => {
       setIsLoading(false);
     }
   };
-
-  const InputField = ({ label, icon: Icon, type = 'text', placeholder, value, onChange }) => (
-    <div className="flex flex-col gap-1.5">
-      <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 ml-0.5">{label}</label>
-      <div className="relative flex items-center">
-        <div className="absolute left-3.5 text-gray-400 pointer-events-none">
-          <Icon size={16} strokeWidth={2} />
-        </div>
-        <input
-          type={type}
-          value={value}
-          onChange={onChange}
-          placeholder={placeholder}
-          className="w-full bg-[#FAFCFA] dark:bg-[#232B23] border border-gray-200 dark:border-white/10 text-gray-800 dark:text-gray-200 rounded-xl py-3 pl-10 pr-4 outline-none focus:border-[#5D7C59] dark:focus:border-[#7A9A7B] focus:ring-2 focus:ring-[#5D7C59]/15 transition-all font-medium placeholder:text-gray-400 dark:placeholder:text-gray-500 placeholder:font-normal text-sm"
-        />
-      </div>
-    </div>
-  );
 
   return (
     <AnimatePresence>
