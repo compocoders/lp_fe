@@ -7,6 +7,8 @@ import CreateProfile from './pages/profilePage/CreateProfile';
 import Mainpage from './pages/dashboard/Mainpage';
 import DashboardHome from './pages/dashboard/DashboardHome';
 import ClassroomDetail from './pages/dashboard/ClassroomDetail';
+import ActivityRenderer from './pages/dashboard/ActivityRenderer';
+import ActivityGradebook from './pages/dashboard/ActivityGradebook';
 import JoinClassroomPage from './pages/dashboard/JoinClassroomPage';
 import Settings from './pages/dashboard/Settings';
 import ProtectedRoute from './components/common/ProtectedRoute';
@@ -24,11 +26,13 @@ function App() {
           
           {/* <Route path="/dashboard" element={<Dashboard />} /> */}
           
-          <Route path="/dashboard" element={<Mainpage/>}>
-            <Route index element={<DashboardHome />} />
-            <Route path="classroom/:code" element={<ClassroomDetail />} />
-            <Route path="settings" element={<Settings />} />
-          </Route>
+            <Route path="/dashboard" element={<Mainpage/>}>
+              <Route index element={<DashboardHome />} />
+              <Route path="classroom/:code" element={<ClassroomDetail />} />
+              <Route path="activity/:activityId" element={<ActivityRenderer />} />
+              <Route path="activity/:activityId/gradebook" element={<ActivityGradebook />} />
+              <Route path="settings" element={<Settings />} />
+            </Route>
           <Route path="/join/:token" element={<JoinClassroomPage />} />
         </Route>
       </Routes>

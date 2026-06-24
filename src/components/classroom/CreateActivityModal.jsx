@@ -1,166 +1,228 @@
-import React, { useEffect, useState } from 'react';
-import {
-  ClipboardList, Plus, Circle, CheckSquare, X, Trash2,
-} from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ClipboardList, Code, Grid, AlignLeft, FileText, UploadCloud, ChevronLeft, Calendar, LayoutTemplate, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+import QuizBuilder from './activities/QuizBuilder';
+import CodingBuilder from './activities/CodingBuilder';
+import SpreadsheetBuilder from './activities/SpreadsheetBuilder';
+import CaseStudyBuilder from './activities/CaseStudyBuilder';
+import GenericBuilder from './activities/GenericBuilder';
+import FrontendBuilder from './activities/FrontendBuilder';
+import { createActivity } from '../../api/activity.api';
+import { useParams } from 'react-router-dom';
 
-const DEFAULT_QUESTION = { id: 1, type: 'multiple_choice', question: '', options: ['Option 1'] };
+const ACTIVITY_TYPES = [
+  { id: 'QUIZ', label: 'Quiz / Test', description: 'Multiple choice, checkboxes, short answers', icon: ClipboardList, color: 'from-blue-500 to-blue-600' },
+  { id: 'CODING', label: 'Coding Challenge', description: 'Live code execution in Python or JS', icon: Code, color: 'from-green-500 to-green-600' },
+  { id: 'FRONTEND', label: 'Frontend UI Task', description: 'Interactive HTML, CSS, & JS with live preview', icon: LayoutTemplate, color: 'from-teal-500 to-teal-600' },
+  { id: 'SPREADSHEET', label: 'Spreadsheet Task', description: 'In-browser interactive spreadsheet', icon: Grid, color: 'from-emerald-500 to-emerald-600' },
+  { id: 'ESSAY', label: 'Essay', description: 'Long-form written response', icon: AlignLeft, color: 'from-yellow-500 to-yellow-600' },
+  { id: 'PROBLEM_SET', label: 'Problem Set', description: 'General problem solving', icon: FileText, color: 'from-purple-500 to-purple-600' },
+  { id: 'PRESENTATION', label: 'File Submission', description: 'Upload PPT, PDF, or Doc', icon: UploadCloud, color: 'from-red-500 to-red-600' },
+  { id: 'CASE_STUDY', label: 'Case Study', description: 'Scenario with reference files', icon: FileText, color: 'from-indigo-500 to-indigo-600' },
+];
 
-const CreateActivityModal = ({ isOpen, onClose, onSave }) => {
-  const [questions, setQuestions] = useState([DEFAULT_QUESTION]);
+const CreateActivityModal = ({ isOpen, onClose, onSuccess, classroomId }) => {
+  const [step, setStep] = useState(1);
+  const [activityData, setActivityData] = useState({
+    title: '',
+    description: '',
+    activityType: '',
+    totalPoints: 100,
+    deadline: '',
+    allowLate: false,
+    maxAttempts: 1,
+    questions: [],
+  });
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    if (!isOpen) setQuestions([{ ...DEFAULT_QUESTION, id: Date.now() }]);
+    if (!isOpen) {
+      setStep(1);
+      setActivityData({ title: '', description: '', activityType: '', totalPoints: 100, deadline: '', allowLate: false, maxAttempts: 1, questions: [] });
+    }
   }, [isOpen]);
 
   if (!isOpen) return null;
 
-  const updateQuestion = (qIndex, updates) => {
-    const newQs = [...questions];
-    Object.assign(newQs[qIndex], updates);
-    setQuestions(newQs);
+  const handleTypeSelect = (typeId) => {
+    setActivityData({ ...activityData, activityType: typeId, questions: [] });
+    setStep(2);
   };
 
-  const updateOption = (qIndex, oIndex, value) => {
-    const newQs = [...questions];
-    newQs[qIndex].options[oIndex] = value;
-    setQuestions(newQs);
+  const handleSave = async (classroomId) => {
+    try {
+      if (!activityData.title) {
+        toast.warning('Please enter an activity title before saving.');
+        return;
+      }
+      setIsSaving(true);
+      
+      // Formatting payload
+      const payload = { ...activityData, status: 'published' };
+      if (!payload.deadline) {
+        delete payload.deadline;
+      } else {
+        payload.deadline = new Date(payload.deadline).toISOString();
+      }
+      
+      if (payload.activityType === 'FRONTEND' && payload.questions.length > 0 && !payload.questions[0].content?.trim()) {
+        payload.questions[0].content = 'Build the UI based on the instructions or mockup provided.';
+      }
+      
+      await createActivity(classroomId, payload);
+      toast.success('Activity created successfully!');
+      onSuccess?.();
+      onClose();
+    } catch (err) {
+      console.error(err);
+      toast.error(err.response?.data?.message || 'Failed to create activity. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const addOption = (qIndex) => {
-    const newQs = [...questions];
-    newQs[qIndex].options.push(`Option ${newQs[qIndex].options.length + 1}`);
-    setQuestions(newQs);
-  };
+  const renderBuilder = () => {
+    const props = {
+      questions: activityData.questions,
+      setQuestions: (qs) => setActivityData({ ...activityData, questions: qs })
+    };
 
-  const removeOption = (qIndex, oIndex) => {
-    const newQs = [...questions];
-    newQs[qIndex].options.splice(oIndex, 1);
-    setQuestions(newQs);
-  };
-
-  const removeQuestion = (qIndex) => {
-    const newQs = questions.filter((_, i) => i !== qIndex);
-    setQuestions(newQs.length ? newQs : [{ id: Date.now(), type: 'multiple_choice', question: '', options: ['Option 1'] }]);
-  };
-
-  const addQuestion = () => {
-    setQuestions([...questions, { id: Date.now(), type: 'multiple_choice', question: '', options: ['Option 1'] }]);
+    switch (activityData.activityType) {
+      case 'QUIZ': return <QuizBuilder {...props} />;
+      case 'CODING': return <CodingBuilder {...props} />;
+      case 'FRONTEND': return <FrontendBuilder {...props} />;
+      case 'SPREADSHEET': return <SpreadsheetBuilder {...props} />;
+      case 'CASE_STUDY': return <CaseStudyBuilder {...props} />;
+      case 'ESSAY': return <GenericBuilder typeLabel="Essay Prompt" defaultQuestionType="essay" {...props} />;
+      case 'PROBLEM_SET': return <GenericBuilder typeLabel="Problem Set" defaultQuestionType="short_answer" {...props} />;
+      case 'PRESENTATION': return <GenericBuilder typeLabel="File Submission" defaultQuestionType="file_upload" {...props} />;
+      default: return null;
+    }
   };
 
   return (
     <div className="absolute inset-0 bg-[#f0f4f8] dark:bg-[#121612] flex flex-col z-[1000] overflow-y-auto transition-colors duration-200" style={{ animation: 'fadeSlideIn 0.2s ease-out' }}>
       <div className="bg-white dark:bg-[#1A211A] px-6 py-4 border-b border-gray-100 dark:border-white/10 flex items-center justify-between sticky top-0 z-10 shadow-sm shrink-0 transition-colors duration-200">
         <div className="flex items-center gap-3">
+          {step === 2 && (
+            <button onClick={() => setStep(1)} className="p-2 mr-2 bg-gray-100 dark:bg-white/5 rounded-full hover:bg-gray-200 dark:hover:bg-white/10 transition-colors border-none cursor-pointer">
+              <ChevronLeft size={18} className="text-gray-600 dark:text-gray-300" />
+            </button>
+          )}
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#5D7C59] to-[#4A6447] flex items-center justify-center">
             <ClipboardList size={18} className="text-white" />
           </div>
           <div>
             <span className="text-base font-bold text-gray-900 dark:text-white">Activity Builder</span>
-            <p className="text-[11px] text-gray-400 dark:text-gray-500">Build your quiz or assignment</p>
+            <p className="text-[11px] text-gray-400 dark:text-gray-500">{step === 1 ? 'Select Activity Type' : 'Configure Activity'}</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
           <button onClick={onClose} className="px-4 py-2 text-sm font-semibold text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors border-none bg-transparent cursor-pointer">Cancel</button>
-          <button onClick={() => onSave?.(questions)} className="px-5 py-2.5 bg-gradient-to-r from-[#5D7C59] to-[#4A6447] text-white rounded-xl text-sm font-bold shadow-md hover:-translate-y-0.5 transition-all border-none cursor-pointer">Save Activity</button>
+          {step === 2 && (
+            <button 
+              onClick={() => handleSave(classroomId)} 
+              disabled={isSaving}
+              className="px-5 py-2 bg-gradient-to-r from-[#5D7C59] to-[#4A6447] text-white rounded-xl text-sm font-bold shadow-sm shadow-[#5D7C59]/20 hover:shadow-md hover:from-[#4A6447] hover:to-[#3A4E38] transition-all disabled:opacity-50 disabled:cursor-not-allowed border-none cursor-pointer flex items-center justify-center min-w-[120px]"
+            >
+              {isSaving ? (
+                <><Loader2 size={14} className="animate-spin" /> Saving...</>
+              ) : 'Save Activity'}
+            </button>
+          )}
         </div>
       </div>
-      <div className="max-w-2xl w-full mx-auto px-5 py-8 flex flex-col gap-4">
-        <div className="bg-white dark:bg-[#1A211A] rounded-2xl border border-gray-100 dark:border-white/10 shadow-sm overflow-hidden transition-colors duration-200" style={{ borderTop: '6px solid #5D7C59' }}>
-          <div className="px-6 py-6 flex flex-col gap-4">
-            <input
-              type="text"
-              placeholder="Activity Title"
-              className="w-full border-none text-2xl font-bold text-gray-900 dark:text-white py-2 outline-none bg-transparent"
-              style={{ borderBottom: '2px solid #e5e7eb' }}
-              onFocus={e => { e.currentTarget.style.borderBottomColor = '#5D7C59'; }}
-              onBlur={e => { e.currentTarget.style.borderBottomColor = '#e5e7eb'; }}
-            />
-            <input
-              type="text"
-              placeholder="Activity description (optional)"
-              className="w-full border-none text-sm text-gray-500 dark:text-gray-400 py-1 outline-none bg-transparent"
-              style={{ borderBottom: '1px solid #e5e7eb' }}
-              onFocus={e => { e.currentTarget.style.borderBottomColor = '#5D7C59'; }}
-              onBlur={e => { e.currentTarget.style.borderBottomColor = '#e5e7eb'; }}
-            />
-          </div>
-        </div>
-        {questions.map((q, qIndex) => (
-          <div key={q.id} className="bg-white dark:bg-[#1A211A] rounded-2xl border border-gray-100 dark:border-white/10 shadow-sm overflow-hidden relative transition-colors duration-200">
-            <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#5D7C59] rounded-r" />
-            <div className="px-6 py-5">
-              <div className="flex gap-4 items-start mb-5">
-                <input
-                  type="text"
-                  placeholder="Question text"
-                  value={q.question}
-                  onChange={e => updateQuestion(qIndex, { question: e.target.value })}
-                  className="flex-1 bg-[#FAFCFA] dark:bg-[#232B23] rounded-t-xl px-4 py-4 text-[15px] font-medium text-gray-800 dark:text-gray-200 outline-none border-b-2 border-gray-200 dark:border-white/10 focus:border-[#5D7C59] dark:focus:border-[#7A9A7B] transition-colors"
-                />
-                <select
-                  value={q.type}
-                  onChange={e => updateQuestion(qIndex, { type: e.target.value })}
-                  className="w-52 px-4 py-3.5 rounded-xl border border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-300 text-sm outline-none bg-white dark:bg-[#232B23] cursor-pointer focus:border-[#5D7C59] dark:focus:border-[#7A9A7B] transition-colors"
-                >
-                  <option value="multiple_choice">Multiple Choice</option>
-                  <option value="checkboxes">Checkboxes</option>
-                  <option value="short_answer">Short Answer</option>
-                </select>
-              </div>
-              {q.type !== 'short_answer' ? (
-                <div className="flex flex-col gap-3 pl-2">
-                  {q.options.map((opt, oIndex) => (
-                    <div key={oIndex} className="flex items-center gap-3">
-                      {q.type === 'multiple_choice'
-                        ? <Circle size={18} className="text-[#5D7C59]/40 dark:text-[#7A9A7B]/40 shrink-0" />
-                        : <CheckSquare size={18} className="text-[#5D7C59]/40 dark:text-[#7A9A7B]/40 shrink-0" />}
-                      <input
-                        type="text"
-                        value={opt}
-                        onChange={e => updateOption(qIndex, oIndex, e.target.value)}
-                        className="flex-1 border-none text-sm text-gray-700 dark:text-gray-300 py-1 outline-none bg-transparent"
-                        style={{ borderBottom: '1px solid transparent' }}
-                        onFocus={e => { e.currentTarget.style.borderBottomColor = '#5D7C59'; }}
-                        onBlur={e => { e.currentTarget.style.borderBottomColor = 'transparent'; }}
-                      />
-                      {q.options.length > 1 && (
-                        <button onClick={() => removeOption(qIndex, oIndex)} className="text-gray-300 dark:text-gray-500 hover:text-red-400 dark:hover:text-red-450 transition-colors border-none bg-transparent cursor-pointer p-1">
-                          <X size={15} />
-                        </button>
-                      )}
+
+      <div className="max-w-4xl w-full mx-auto px-5 py-8 flex flex-col gap-6">
+        {step === 1 ? (
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">What kind of activity are you creating?</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {ACTIVITY_TYPES.map((type) => {
+                const Icon = type.icon;
+                return (
+                  <div 
+                    key={type.id} 
+                    onClick={() => handleTypeSelect(type.id)}
+                    className="bg-white dark:bg-[#1A211A] p-6 rounded-2xl border border-gray-100 dark:border-white/10 shadow-sm hover:shadow-md hover:-translate-y-1 cursor-pointer transition-all flex flex-col gap-3 group"
+                  >
+                    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${type.color} flex items-center justify-center shadow-sm`}>
+                      <Icon size={24} className="text-white" />
                     </div>
-                  ))}
-                  <div className="flex items-center gap-3 mt-1">
-                    {q.type === 'multiple_choice'
-                      ? <Circle size={18} className="text-gray-200 dark:text-white/10 shrink-0" />
-                      : <CheckSquare size={18} className="text-gray-200 dark:text-white/10 shrink-0" />}
-                    <button onClick={() => addOption(qIndex)} className="text-sm text-gray-400 dark:text-gray-500 hover:text-[#5D7C59] dark:hover:text-[#7A9A7B] font-medium transition-colors border-none bg-transparent cursor-pointer py-1">
-                      Add option
-                    </button>
+                    <div>
+                      <h3 className="text-[16px] font-bold text-gray-900 dark:text-white group-hover:text-[#5D7C59] transition-colors">{type.label}</h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">{type.description}</p>
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <div className="pl-2 mt-2">
-                  <div className="text-sm text-gray-400 dark:text-gray-500 pb-2 w-2/3" style={{ borderBottom: '1px dashed #d1d5db' }}>Short answer text</div>
-                </div>
-              )}
-              <div className="flex justify-end mt-5 pt-4 border-t border-gray-100 dark:border-white/10">
-                <button onClick={() => removeQuestion(qIndex)} className="p-2 rounded-full text-gray-300 dark:text-gray-600 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all border-none bg-transparent cursor-pointer">
-                  <Trash2 size={18} />
-                </button>
-              </div>
+                );
+              })}
             </div>
           </div>
-        ))}
-        <button
-          onClick={addQuestion}
-          className="bg-white dark:bg-[#1A211A] border border-gray-200 dark:border-white/10 rounded-2xl py-4 flex items-center justify-center gap-2 text-[#5D7C59] dark:text-[#7A9A7B] text-sm font-bold hover:bg-[#FAFCFA] dark:hover:bg-[#232B23] hover:border-[#5D7C59]/40 transition-all shadow-sm cursor-pointer"
-        >
-          <Plus size={17} strokeWidth={2.5} /> Add Question
-        </button>
+        ) : (
+          <>
+            <div className="bg-white dark:bg-[#1A211A] rounded-2xl border border-gray-100 dark:border-white/10 shadow-sm overflow-hidden transition-colors duration-200" style={{ borderTop: '6px solid #5D7C59' }}>
+              <div className="px-6 py-6 flex flex-col gap-4">
+                <input
+                  type="text"
+                  placeholder="Activity Title"
+                  value={activityData.title}
+                  onChange={e => setActivityData({ ...activityData, title: e.target.value })}
+                  className="w-full border-none text-2xl font-bold text-gray-900 dark:text-white py-2 outline-none bg-transparent"
+                  style={{ borderBottom: '2px solid #e5e7eb' }}
+                  onFocus={e => { e.currentTarget.style.borderBottomColor = '#5D7C59'; }}
+                  onBlur={e => { e.currentTarget.style.borderBottomColor = '#e5e7eb'; }}
+                />
+                <input
+                  type="text"
+                  placeholder="Instructions or description (optional)"
+                  value={activityData.description}
+                  onChange={e => setActivityData({ ...activityData, description: e.target.value })}
+                  className="w-full border-none text-sm text-gray-500 dark:text-gray-400 py-1 outline-none bg-transparent"
+                  style={{ borderBottom: '1px solid #e5e7eb' }}
+                  onFocus={e => { e.currentTarget.style.borderBottomColor = '#5D7C59'; }}
+                  onBlur={e => { e.currentTarget.style.borderBottomColor = '#e5e7eb'; }}
+                />
+                
+                <div className="flex gap-4 mt-2">
+                  <div className="flex-1">
+                    <label className="text-xs text-gray-500 block mb-1">Total Points</label>
+                    <input 
+                      type="number" 
+                      value={activityData.totalPoints}
+                      onChange={e => setActivityData({ ...activityData, totalPoints: parseInt(e.target.value) || 0 })}
+                      className="w-full bg-[#FAFCFA] dark:bg-[#232B23] rounded-lg px-3 py-2 text-sm text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-white/10 outline-none" 
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label className="text-xs text-gray-500 block mb-1">Deadline (Optional)</label>
+                    <input 
+                      type="datetime-local" 
+                      value={activityData.deadline}
+                      onChange={e => setActivityData({ ...activityData, deadline: e.target.value })}
+                      className="w-full bg-[#FAFCFA] dark:bg-[#232B23] rounded-lg px-3 py-2 text-sm text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-white/10 outline-none" 
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label className="text-xs text-gray-500 block mb-1">Max Attempts</label>
+                    <input 
+                      type="number" 
+                      min="1"
+                      value={activityData.maxAttempts}
+                      onChange={e => setActivityData({ ...activityData, maxAttempts: parseInt(e.target.value) || 1 })}
+                      className="w-full bg-[#FAFCFA] dark:bg-[#232B23] rounded-lg px-3 py-2 text-sm text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-white/10 outline-none" 
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {renderBuilder()}
+          </>
+        )}
       </div>
     </div>
   );
 };
 
 export default CreateActivityModal;
+
