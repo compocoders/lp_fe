@@ -1,11 +1,11 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
   Plus, FileText, ExternalLink, MoreVertical, ArrowUp, Bot, Sparkles,
   PenLine, Users, ChevronRight, Clock, Play, Brain, ScrollText, Layers,
   MessageCircle, ChevronDown, BookOpen, Cpu, User, Check,
   Share2, PanelRightOpen, PanelRightClose, Zap, Trash2, Pencil, Download,
-  AlertTriangle, Loader2,
+  AlertTriangle, Loader2, Award
 } from 'lucide-react';
 import { getClassroomByCode } from '../../api/classroom.api';
 import { getLearningMaterials, deleteLearningMaterial } from '../../api/learningMaterials.api';
@@ -19,6 +19,9 @@ import CreateLearningMaterialModal from '../../components/classroom/CreateLearni
 import UpdateLearningMaterialModal from '../../components/classroom/UpdateLearningMaterialModal';
 import MaterialPreviewModal from '../../components/classroom/MaterialPreviewModal';
 import CreateActivityModal from '../../components/classroom/CreateActivityModal';
+import { listActivities, deleteActivity, publishActivity, closeActivity } from '../../api/activity.api';
+import ClassroomGradebook from '../../components/classroom/ClassroomGradebook';
+import MyGrades from '../../components/classroom/MyGrades';
 
 /* ─── mock data ─── */
 const MOCK_MATERIALS = [
@@ -60,6 +63,7 @@ const STUDIO_OUTPUTS = {
 /* ════════════════════════════════════════════════════════════ */
 const ClassroomDetail = () => {
   const { code } = useParams();
+  const navigate = useNavigate();
   const { user } = useAuthStore();
   const [classroom, setClassroom] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -81,7 +85,10 @@ const ClassroomDetail = () => {
   const [deleteConfirmMaterial, setDeleteConfirmMaterial] = useState(null);
   const [previewMaterial, setPreviewMaterial] = useState(null);
 
-  const [selectedWork, setSelectedWork] = useState(MOCK_CLASSWORKS[0]);
+  const [activities, setActivities] = useState([]);
+  const [activitiesLoading, setActivitiesLoading] = useState(false);
+  const [selectedWork, setSelectedWork] = useState(null);
+  
   const [studioOutput, setStudioOutput] = useState(null);
   const [studioLoading, setStudioLoading] = useState(false);
   const [studioAction, setStudioAction] = useState(null);
@@ -95,8 +102,18 @@ const ClassroomDetail = () => {
   const [showCreateChoiceModal, setShowCreateChoiceModal] = useState(false);
   const [showCreateMaterialModal, setShowCreateMaterialModal] = useState(false);
   const [showCreateActivityModal, setShowCreateActivityModal] = useState(false);
+  const [deletingActivityId, setDeletingActivityId] = useState(null);
+  const [deleteConfirmActivity, setDeleteConfirmActivity] = useState(null);
+  const [togglingActivityId, setTogglingActivityId] = useState(null);
 
+  const isTeacher = classroom?.userId === user?.id || classroom?.classroomUsers?.find(u => u.userId === user?.id)?.role === 'OWNER';
 
+  const TABS = [
+    ['materials', 'Learning Materials', BookOpen],
+    ['works', 'Class Works', PenLine],
+    ['members', 'Members', Users],
+    ...(isTeacher ? [['gradebook', 'Gradebook', Award]] : [['grades', 'My Grades', Award]])
+  ];
   const messagesEndRef = useRef(null);
   const msgIdRef = useRef(10);
   const textareaRef = useRef(null);
@@ -116,6 +133,23 @@ const ClassroomDetail = () => {
     }
   }, []);
 
+  const fetchActivities = useCallback(async (classroomId) => {
+    if (!classroomId) return;
+    setActivitiesLoading(true);
+    try {
+      const data = await listActivities(classroomId);
+      const activityList = Array.isArray(data) ? data : (data.activities || []);
+      setActivities(activityList);
+      if (activityList.length > 0) {
+        setSelectedWork(prev => prev || activityList[0]);
+      }
+    } catch (e) {
+      console.error('Failed to fetch activities', e);
+    } finally {
+      setActivitiesLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     const fetchClassroom = async () => {
       try {
@@ -123,12 +157,16 @@ const ClassroomDetail = () => {
         const data = await getClassroomByCode(code);
         const room = Array.isArray(data) && data.length > 0 ? data[0] : data;
         setClassroom(room);
-        if (room?.id) fetchMaterials(room.id);
+        if (room?.id) {
+          window.__CLASSROOM_ID = room.id;
+          fetchMaterials(room.id);
+          fetchActivities(room.id);
+        }
       } catch (e) { console.error(e); }
       finally { setIsLoading(false); }
     };
     if (code) fetchClassroom();
-  }, [code, fetchMaterials]);
+  }, [code, fetchMaterials, fetchActivities]);
 
   const handleDeleteMaterial = async (material) => {
     setDeletingMaterialId(material.id);
@@ -141,6 +179,34 @@ const ClassroomDetail = () => {
     } finally {
       setDeletingMaterialId(null);
       setDeleteConfirmMaterial(null);
+    }
+  };
+
+  const handleDeleteActivity = async (activity) => {
+    setDeletingActivityId(activity.id);
+    try {
+      await deleteActivity(activity.id);
+      setActivities(prev => prev.filter(a => a.id !== activity.id));
+      if (selectedWork?.id === activity.id) setSelectedWork(activities.find(a => a.id !== activity.id) || null);
+    } catch (e) {
+      console.error('Failed to delete activity', e);
+    } finally {
+      setDeletingActivityId(null);
+      setDeleteConfirmActivity(null);
+    }
+  };
+
+  const handleToggleActivityStatus = async (activity) => {
+    setTogglingActivityId(activity.id);
+    try {
+      const isPublished = activity.status === 'published';
+      const updated = isPublished ? await closeActivity(activity.id) : await publishActivity(activity.id);
+      setActivities(prev => prev.map(a => a.id === activity.id ? { ...a, status: updated.status || (isPublished ? 'closed' : 'published') } : a));
+      if (selectedWork?.id === activity.id) setSelectedWork(prev => ({ ...prev, status: updated.status || (isPublished ? 'closed' : 'published') }));
+    } catch (e) {
+      console.error('Failed to toggle activity status', e);
+    } finally {
+      setTogglingActivityId(null);
     }
   };
 
@@ -538,7 +604,11 @@ const ClassroomDetail = () => {
               <div className="flex-1 p-5 overflow-y-auto flex flex-col gap-3">
                 <div className="flex items-start justify-between gap-2">
                   <h3 className="text-lg font-bold text-gray-900 dark:text-white leading-tight">{selectedWork.title}</h3>
-                  <span className="text-[10px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-lg bg-[#5D7C59]/10 text-[#5D7C59] dark:text-[#7A9A7B] shrink-0">Active</span>
+                  <span className={`text-[10px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-lg shrink-0 ${
+                    selectedWork.status === 'published' ? 'bg-[#5D7C59]/10 text-[#5D7C59] dark:text-[#7A9A7B]'
+                    : selectedWork.status === 'closed' ? 'bg-red-500/10 text-red-500'
+                    : 'bg-gray-100 dark:bg-white/10 text-gray-400'
+                  }`}>{selectedWork.status || 'draft'}</span>
                 </div>
                 <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">{selectedWork.description}</p>
                 <div className="flex flex-wrap gap-2">
@@ -553,12 +623,41 @@ const ClassroomDetail = () => {
                     </div>
                     <div>
                       <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Due Date</p>
-                      <p className="text-sm font-bold text-gray-800 dark:text-gray-200">{selectedWork.deadline}</p>
+                      <p className="text-sm font-bold text-gray-800 dark:text-gray-200">
+                        {selectedWork.deadline ? new Date(selectedWork.deadline).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) : 'No deadline'}
+                      </p>
                     </div>
                   </div>
-                  <button className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#5D7C59] to-[#4A6447] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all border-none cursor-pointer">
-                    <Play size={15} fill="white" /> Start Activity
+                  <button 
+                    onClick={() => navigate(`/dashboard/activity/${selectedWork.id}`)}
+                    className="w-full py-3 rounded-xl bg-gradient-to-r from-[#5D7C59] to-[#4A6447] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all border-none cursor-pointer"
+                  >
+                    <Play size={15} fill="white" /> {isTeacher ? 'View Submissions' : 'Take Activity'}
                   </button>
+                  {isTeacher && (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleToggleActivityStatus(selectedWork)}
+                        disabled={!!togglingActivityId}
+                        className={`flex-1 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 border transition-all cursor-pointer ${
+                          selectedWork.status === 'published'
+                            ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-700/40 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/30'
+                            : 'bg-[#5D7C59]/10 dark:bg-[#5D7C59]/20 border-[#5D7C59]/20 text-[#5D7C59] dark:text-[#7A9A7B] hover:bg-[#5D7C59]/20 dark:hover:bg-[#5D7C59]/30'
+                        }`}
+                      >
+                        {togglingActivityId === selectedWork.id
+                          ? <Loader2 size={12} className="animate-spin" />
+                          : selectedWork.status === 'published' ? '⏸ Close' : '▶ Publish'
+                        }
+                      </button>
+                      <button
+                        onClick={() => setDeleteConfirmActivity(selectedWork)}
+                        className="py-2.5 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-2 border border-red-200 dark:border-red-800/40 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 transition-all cursor-pointer"
+                      >
+                        <Trash2 size={13} /> Delete
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             </>
@@ -610,6 +709,15 @@ const ClassroomDetail = () => {
         </div>
       );
     }
+
+    if (activeTab === 'gradebook') {
+      return <ClassroomGradebook classroomId={classroom.id} />;
+    }
+
+    if (activeTab === 'grades') {
+      return <MyGrades classroomId={classroom.id} />;
+    }
+
     return null;
   };
 
@@ -628,7 +736,7 @@ const ClassroomDetail = () => {
               <BookOpen size={24} className="text-[#5D7C59]/50 dark:text-[#7A9A7B]/50" />
             </div>
             <p className="text-sm font-semibold text-gray-500 dark:text-gray-400">No materials yet</p>
-            <p className="text-xs text-gray-400 dark:text-gray-500">Click + to upload the first one</p>
+            {isTeacher && <p className="text-xs text-gray-400 dark:text-gray-500">Click + to upload the first one</p>}
           </div>
         ) : materials.map(mat => (
           <div
@@ -658,21 +766,25 @@ const ClassroomDetail = () => {
                   <ExternalLink size={14} strokeWidth={2} />
                 </button>
               )}
-              <button
-                onClick={e => { e.stopPropagation(); setMaterialToUpdate(mat); setShowUpdateMaterialModal(true); }}
-                className={`p-1.5 rounded-lg border-none cursor-pointer bg-transparent transition-colors ${selectedMaterial?.id === mat.id ? 'text-white/65 hover:bg-white/15' : 'text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-[#5D7C59] dark:hover:text-[#7A9A7B]'}`}
-              >
-                <Pencil size={13} strokeWidth={2} />
-              </button>
-              <button
-                onClick={e => { e.stopPropagation(); setDeleteConfirmMaterial(mat); }}
-                disabled={deletingMaterialId === mat.id}
-                className={`p-1.5 rounded-lg border-none cursor-pointer bg-transparent transition-colors ${selectedMaterial?.id === mat.id ? 'text-white/65 hover:bg-white/15' : 'text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-red-500 dark:hover:text-red-400'}`}
-              >
-                {deletingMaterialId === mat.id
-                  ? <Loader2 size={13} className="animate-spin" />
-                  : <Trash2 size={13} strokeWidth={2} />}
-              </button>
+              {isTeacher && (
+                <>
+                  <button
+                    onClick={e => { e.stopPropagation(); setMaterialToUpdate(mat); setShowUpdateMaterialModal(true); }}
+                    className={`p-1.5 rounded-lg border-none cursor-pointer bg-transparent transition-colors ${selectedMaterial?.id === mat.id ? 'text-white/65 hover:bg-white/15' : 'text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-[#5D7C59] dark:hover:text-[#7A9A7B]'}`}
+                  >
+                    <Pencil size={13} strokeWidth={2} />
+                  </button>
+                  <button
+                    onClick={e => { e.stopPropagation(); setDeleteConfirmMaterial(mat); }}
+                    disabled={deletingMaterialId === mat.id}
+                    className={`p-1.5 rounded-lg border-none cursor-pointer bg-transparent transition-colors ${selectedMaterial?.id === mat.id ? 'text-white/65 hover:bg-white/15' : 'text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-red-500 dark:hover:text-red-400'}`}
+                  >
+                    {deletingMaterialId === mat.id
+                      ? <Loader2 size={13} className="animate-spin" />
+                      : <Trash2 size={13} strokeWidth={2} />}
+                  </button>
+                </>
+              )}
             </div>
           </div>
         ))}
@@ -681,7 +793,11 @@ const ClassroomDetail = () => {
 
     if (activeTab === 'works') return (
       <div className="left-panel-wrapper left-list flex-1 overflow-y-auto flex flex-col gap-2 min-w-0 pr-1">
-        {MOCK_CLASSWORKS.map(work => (
+        {activitiesLoading && activities.length === 0 ? (
+          <div className="p-4 text-sm text-gray-500 text-center">Loading activities...</div>
+        ) : activities.length === 0 ? (
+          <div className="p-4 text-sm text-gray-500 text-center">No activities found.</div>
+        ) : activities.map(work => (
           <div
             key={work.id}
             onClick={() => setSelectedWork(work)}
@@ -699,10 +815,33 @@ const ClassroomDetail = () => {
               <p className={`text-[13.5px] font-semibold truncate tracking-tight ${selectedWork?.id === work.id ? 'text-white' : 'text-gray-800 dark:text-gray-200'}`}>{work.title}</p>
               <div className="flex items-center gap-1.5 mt-0.5">
                 <Clock size={10} className={selectedWork?.id === work.id ? 'text-[#FFC700]' : 'text-gray-400 dark:text-gray-500'} />
-                <span className={`text-[10.5px] font-medium ${selectedWork?.id === work.id ? 'text-[#FFC700]' : 'text-gray-400 dark:text-gray-500'}`}>Due {work.deadline}</span>
+                <span className={`text-[10.5px] font-medium ${selectedWork?.id === work.id ? 'text-[#FFC700]' : 'text-gray-400 dark:text-gray-500'}`}>
+                  {work.deadline ? `Due ${new Date(work.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}` : 'No deadline'}
+                </span>
               </div>
             </div>
-            <button onClick={e => e.stopPropagation()} className={`p-1.5 rounded-lg border-none cursor-pointer bg-transparent opacity-0 group-hover:opacity-100 transition-all ${selectedWork?.id === work.id ? 'text-white/65 hover:bg-white/15' : 'text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-[#5D7C59] dark:hover:text-[#7A9A7B]'}`}><ExternalLink size={14} strokeWidth={2.5} /></button>
+            <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-all">
+              {isTeacher ? (
+                <>
+                  <button
+                    onClick={e => { e.stopPropagation(); setDeleteConfirmActivity(work); }}
+                    disabled={deletingActivityId === work.id}
+                    title="Delete activity"
+                    className={`p-1.5 rounded-lg border-none cursor-pointer bg-transparent transition-colors ${
+                      selectedWork?.id === work.id
+                        ? 'text-white/65 hover:bg-white/15 hover:text-red-300'
+                        : 'text-gray-400 dark:text-gray-500 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500 dark:hover:text-red-400'
+                    }`}
+                  >
+                    {deletingActivityId === work.id
+                      ? <Loader2 size={13} className="animate-spin" />
+                      : <Trash2 size={13} strokeWidth={2} />}
+                  </button>
+                </>
+              ) : (
+                <button onClick={e => e.stopPropagation()} className={`p-1.5 rounded-lg border-none cursor-pointer bg-transparent opacity-0 group-hover:opacity-100 transition-all ${selectedWork?.id === work.id ? 'text-white/65 hover:bg-white/15' : 'text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-[#5D7C59] dark:hover:text-[#7A9A7B]'}`}><ExternalLink size={14} strokeWidth={2.5} /></button>
+              )}
+            </div>
           </div>
         ))}
       </div>
@@ -730,12 +869,6 @@ const ClassroomDetail = () => {
       </div>
     );
   };
-
-  const TABS = [
-    ['materials', 'Learning Materials', BookOpen],
-    ['works', 'Class Works', PenLine],
-    ['members', 'Members', Users],
-  ];
 
   return (
     <>
@@ -806,13 +939,15 @@ const ClassroomDetail = () => {
                   <Share2 size={14} strokeWidth={2.5} />
                   <span>Share</span>
                 </button>
-                <button
-                  onClick={() => setShowCreateChoiceModal(true)}
-                  className="flex items-center gap-2 px-4 py-2.5 bg-[#FFC700] hover:bg-[#FFD633] text-gray-900 font-extrabold text-xs rounded-xl shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all border-none cursor-pointer"
-                >
-                  <Plus size={14} strokeWidth={3} />
-                  <span>Create</span>
-                </button>
+                {isTeacher && (
+                  <button
+                    onClick={() => setShowCreateChoiceModal(true)}
+                    className="flex items-center gap-2 px-4 py-2.5 bg-[#FFC700] hover:bg-[#FFD633] text-gray-900 font-extrabold text-xs rounded-xl shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all border-none cursor-pointer"
+                  >
+                    <Plus size={14} strokeWidth={3} />
+                    <span>Create</span>
+                  </button>
+                )}
                 <div
                   onClick={() => setShowDetailsModal(true)}
                   className="w-10 h-10 rounded-xl bg-white/20 border border-white/30 flex items-center justify-center text-white font-extrabold text-sm cursor-pointer overflow-hidden hover:ring-2 hover:ring-white/50 transition-all shadow-md shrink-0"
@@ -946,10 +1081,47 @@ const ClassroomDetail = () => {
           </div>
         )}
 
+        {/* Activity Delete Confirmation Dialog */}
+        {deleteConfirmActivity && (
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(6px)' }}>
+            <div className="bg-white dark:bg-[#1A211A] rounded-2xl shadow-2xl border border-gray-100 dark:border-white/10 p-6 max-w-sm w-full flex flex-col gap-4" style={{ animation: 'fadeSlideIn 0.2s ease-out' }}>
+              <div className="w-14 h-14 rounded-2xl bg-red-50 dark:bg-red-500/15 flex items-center justify-center mx-auto">
+                <AlertTriangle size={28} className="text-red-500" />
+              </div>
+              <div className="text-center">
+                <h3 className="text-base font-bold text-gray-900 dark:text-white mb-1">Delete Activity?</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  <span className="font-semibold text-gray-700 dark:text-gray-300">"{deleteConfirmActivity.title}"</span> and all its submissions will be permanently deleted and cannot be recovered.
+                </p>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setDeleteConfirmActivity(null)}
+                  className="flex-1 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-300 text-sm font-semibold bg-transparent hover:bg-gray-50 dark:hover:bg-white/5 cursor-pointer transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleDeleteActivity(deleteConfirmActivity)}
+                  disabled={deletingActivityId === deleteConfirmActivity.id}
+                  className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-bold cursor-pointer transition-colors flex items-center justify-center gap-2 border-none"
+                >
+                  {deletingActivityId === deleteConfirmActivity.id ? <Loader2 size={15} className="animate-spin" /> : <Trash2 size={15} />}
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <CreateActivityModal
           isOpen={showCreateActivityModal}
+          classroomId={classroom?.id}
           onClose={() => setShowCreateActivityModal(false)}
-          onSave={() => setShowCreateActivityModal(false)}
+          onSuccess={() => {
+            setShowCreateActivityModal(false);
+            if (classroom?.id) fetchActivities(classroom.id);
+          }}
         />
 
         {/* Material Preview */}

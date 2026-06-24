@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, } from 'react-router-dom';
 import { login } from '../../api/auth.api';
 import { motion } from 'framer-motion';
+import { Loader2 } from 'lucide-react';
 import useAuthStore from '../../store/auth.store';
 
 const fadeUpVariant = {
@@ -50,9 +51,7 @@ export default function LoginPage() {
       if (response.token) {
         setAuth(response.user, response.token);
       }
-      
-      console.log('Login successful:', response);
-      navigate('/dashboard'); // Redirect to dashboard
+      navigate('/dashboard');
     } catch (err) {
       console.error('Login failed:', err);
       // Display error to the user
@@ -133,9 +132,11 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full bg-[#7C9A76] hover:bg-[#698864] text-white font-bold py-4 rounded-xl transition-all shadow-md hover:shadow-lg mt-2 disabled:opacity-70 flex justify-center items-center text-lg hover:-translate-y-0.5 active:translate-y-0"
+                className="w-full bg-[#7C9A76] hover:bg-[#698864] text-white font-bold py-4 rounded-xl transition-all shadow-md hover:shadow-lg mt-2 disabled:opacity-70 flex justify-center items-center gap-2 text-lg hover:-translate-y-0.5 active:translate-y-0"
               >
-                {isLoading ? 'Logging in...' : 'Login'}
+                {isLoading ? (
+                  <><Loader2 size={20} className="animate-spin" /> Logging in...</>
+                ) : 'Login'}
               </button>
             </motion.div>
           </form>

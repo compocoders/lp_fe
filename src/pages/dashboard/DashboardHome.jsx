@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Users, Sparkles, BookOpen, Search, Hand } from 'lucide-react';
+import { Plus, Users, Sparkles, BookOpen, Search, Hand, LogOut, AlertTriangle } from 'lucide-react';
+import { toast } from 'sonner';
 import ClassCard from '../../components/dashboard/ClassCard';
 import Loading from '../../components/common/Loading';
 import CreateClassroomModal from '../../components/dashboard/CreateClassroomModal';
@@ -27,6 +28,7 @@ const DashboardHome = () => {
   const [dashboardData, setDashboardData] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [confirmLeave, setConfirmLeave] = useState(null); // { classroomId, name }
 
   const fetchDashboardData = async () => {
     try {
@@ -34,18 +36,19 @@ const DashboardHome = () => {
       setDashboardData(response);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
+      toast.error('Failed to load your classrooms. Pull down to retry.');
     }
   };
 
   const handleLeaveClassroom = async (classroomId) => {
     try {
-      if (window.confirm('Are you sure you want to leave this classroom?')) {
-        setIsProcessing(true);
-        await import('../../api/classroom.api').then(m => m.leaveClassroom(classroomId));
-        await fetchDashboardData();
-      }
+      setIsProcessing(true);
+      setConfirmLeave(null);
+      await import('../../api/classroom.api').then(m => m.leaveClassroom(classroomId));
+      await fetchDashboardData();
+      toast.success('You have left the classroom.');
     } catch (error) {
-      alert(error.response?.data?.message || 'Failed to leave classroom');
+      toast.error(error.response?.data?.message || 'Failed to leave classroom');
     } finally {
       setIsProcessing(false);
     }
@@ -58,9 +61,9 @@ const DashboardHome = () => {
       const { token } = await generateInviteLink(classroomId);
       const link = `${window.location.origin}/join/${token}`;
       navigator.clipboard.writeText(link);
-      alert('Invite link copied to clipboard!');
+      toast.success('Invite link copied to clipboard!');
     } catch (error) {
-      alert(error.response?.data?.message || 'Failed to generate invite link');
+      toast.error(error.response?.data?.message || 'Failed to generate invite link');
     } finally {
       setIsProcessing(false);
     }
@@ -190,7 +193,7 @@ const DashboardHome = () => {
                   isOwner={cls.userId === dashboardData?.id}
                   onClick={() => navigate(`/dashboard/classroom/${cls.roomCode}`)}
                   onShare={() => handleShareClassroom(cls.id)}
-                  onLeave={() => handleLeaveClassroom(cls.id)}
+                  onLeave={() => setConfirmLeave({ classroomId: cls.id, name: cls.name })}
                 />
               ))}
             </div>
@@ -233,6 +236,39 @@ const DashboardHome = () => {
         onClose={() => setIsProfileCardOpen(false)}
         user={dashboardData}
       />
+
+      {/* Leave Classroom Confirm Dialog */}
+      {confirmLeave && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(6px)' }}>
+          <div className="bg-white dark:bg-[#1A211A] rounded-2xl shadow-2xl border border-gray-100 dark:border-white/10 p-6 max-w-sm w-full flex flex-col gap-4" style={{ animation: 'fadeIn 0.2s ease-out' }}>
+            <div className="w-14 h-14 rounded-2xl bg-amber-50 dark:bg-amber-500/15 flex items-center justify-center mx-auto">
+              <LogOut size={26} className="text-amber-500" />
+            </div>
+            <div className="text-center">
+              <h3 className="text-base font-bold text-gray-900 dark:text-white mb-1">Leave Classroom?</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                You'll be removed from <span className="font-semibold text-gray-700 dark:text-gray-300">"{confirmLeave.name}"</span>. You can rejoin later with an invite link.
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirmLeave(null)}
+                className="flex-1 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-300 text-sm font-semibold bg-transparent hover:bg-gray-50 dark:hover:bg-white/5 cursor-pointer transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleLeaveClassroom(confirmLeave.classroomId)}
+                disabled={isProcessing}
+                className="flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold cursor-pointer transition-colors flex items-center justify-center gap-2 border-none disabled:opacity-60"
+              >
+                {isProcessing ? <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : <LogOut size={14} />}
+                Leave
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </PullToRefresh>
   );
 };
