@@ -18,7 +18,7 @@ const Mainpage = () => {
     localStorage.removeItem('user');
     localStorage.removeItem('token');
     try { logout(); } catch (e) {}
-    window.location.href = '/login';
+    navigate('/'); // Or '/login' if you prefer, but usually landing is '/'
   }, [logout]);
 
   useEffect(() => {
@@ -44,7 +44,7 @@ const Mainpage = () => {
   }, [handleLogout]);
 
   return (
-    <div className="flex h-screen bg-[#FAFCFA] dark:bg-[#121612] overflow-hidden relative font-sans transition-colors duration-200">
+    <div className="flex h-[100dvh] bg-[#FAFCFA] dark:bg-[#121612] overflow-hidden relative font-sans transition-colors duration-200">
       {/* Subtle dot grid background — same as landing page */}
       <div
         className="fixed inset-0 pointer-events-none z-0 opacity-[0.025] dark:opacity-10 transition-opacity duration-200"

@@ -92,7 +92,7 @@ const Sidebar = ({ onClose, onLogout, dashboardData }) => {
   );
 
   return (
-    <div className="w-[260px] bg-white dark:bg-[#1A211A] h-screen flex flex-col border-r border-gray-100 dark:border-white/10 shadow-sm shrink-0 overflow-hidden relative transition-colors duration-200">
+    <div className="w-[260px] bg-white dark:bg-[#1A211A] h-[100dvh] flex flex-col border-r border-gray-100 dark:border-white/10 shadow-sm shrink-0 overflow-hidden relative transition-colors duration-200">
       {/* Logo */}
       <div className="flex items-center justify-between px-5 py-5 shrink-0 border-b border-gray-50 dark:border-white/5">
         <div
