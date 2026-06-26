@@ -45,7 +45,7 @@ const InviteClassroomModal = ({ isOpen, onClose, classroom }) => {
     <ModalBackdrop>
       <ModalCard>
         <ModalHeader title="Share Classroom" subtitle="Invite students to join your classroom." onClose={onClose} gradientHeader />
-        <div className="px-6 py-5 flex flex-col gap-4">
+        <div className="px-4 md:px-6 py-4 md:py-5 flex flex-col gap-4">
           {isGeneratingLink ? (
             <div className="flex flex-col items-center justify-center py-8 gap-3">
               <Loader2 size={28} className="text-[#5D7C59] dark:text-[#7A9A7B] animate-spin" />

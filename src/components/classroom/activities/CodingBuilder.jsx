@@ -29,8 +29,8 @@ const CodingBuilder = ({ questions, setQuestions }) => {
   if (!problem.id) return null;
 
   return (
-    <div className="bg-white dark:bg-[#1A211A] rounded-2xl border border-gray-100 dark:border-white/10 shadow-sm p-6 flex flex-col gap-4 transition-colors duration-200">
-      <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Coding Challenge Details</h3>
+    <div className="bg-white dark:bg-[#1A211A] rounded-2xl border border-gray-100 dark:border-white/10 shadow-sm p-4 md:p-6 flex flex-col gap-3 md:gap-4 transition-colors duration-200">
+      <h3 className="text-base md:text-lg font-bold text-gray-900 dark:text-white mb-1 md:mb-2">Coding Challenge Details</h3>
       <div className="flex flex-col gap-2">
         <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Problem Statement</label>
         <textarea

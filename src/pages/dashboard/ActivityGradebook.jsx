@@ -1,16 +1,26 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { getActivity } from '../../api/activity.api';
 import { getAllSubmissions, gradeSubmission } from '../../api/submission.api';
-import { ChevronLeft, Loader2, Search, CheckCircle, Clock, Save, File, Download } from 'lucide-react';
+import { ChevronLeft, Loader2, Search, CheckCircle, Clock, Save, File, Download, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
+import useAIStore from '../../store/ai.store';
 import Loading from '../../components/common/Loading';
 import ErrorState from '../../components/common/ErrorState';
 import Spreadsheet from 'react-spreadsheet';
 
+const CSS_FRAMEWORKS = [
+  { id: 'native', name: 'Native CSS', cdn: '' },
+  { id: 'tailwind', name: 'Tailwind CSS', cdn: '<script src="https://cdn.tailwindcss.com"></script>' },
+  { id: 'bootstrap', name: 'Bootstrap 5', cdn: '<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">' },
+];
+
 const ActivityGradebook = () => {
   const { activityId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const targetStudentId = searchParams.get('studentId');
   
   const [activity, setActivity] = useState(null);
   const [submissions, setSubmissions] = useState([]);
@@ -23,6 +33,8 @@ const ActivityGradebook = () => {
   const [feedback, setFeedback] = useState({});
   const [generalFeedback, setGeneralFeedback] = useState('');
   const [isGrading, setIsGrading] = useState(false);
+  const [isAIGrading, setIsAIGrading] = useState(false);
+  const { isTokensExhausted, setVirtualTokens, setNextResetAt } = useAIStore();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -32,7 +44,16 @@ const ActivityGradebook = () => {
           getAllSubmissions(activityId, 1, 100)
         ]);
         setActivity(actData);
-        setSubmissions(subData.submissions || []);
+        
+        const fetchedSubs = subData.submissions || [];
+        setSubmissions(fetchedSubs);
+
+        if (targetStudentId) {
+          const targetSub = fetchedSubs.find(s => s.studentId === targetStudentId);
+          if (targetSub) {
+            handleSelectSubmission(targetSub);
+          }
+        }
       } catch (err) {
         console.error(err);
         setFetchError(true);
@@ -41,7 +62,7 @@ const ActivityGradebook = () => {
       }
     };
     fetchData();
-  }, [activityId]);
+  }, [activityId, targetStudentId]);
 
   const handleSelectSubmission = (sub) => {
     setSelectedSubmission(sub);
@@ -80,6 +101,60 @@ const ActivityGradebook = () => {
       toast.error(err.response?.data?.message || 'Failed to save grade. Please try again.');
     } finally {
       setIsGrading(false);
+    }
+  };
+
+  const handleAIGrade = async () => {
+    if (!selectedSubmission) return;
+    try {
+      setIsAIGrading(true);
+      const token = localStorage.getItem('token');
+      const res = await fetch('http://localhost:3000/api/ai/grade-submission', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ submissionId: selectedSubmission.id })
+      });
+      
+      const data = await res.json();
+      
+      if (!res.ok) {
+        if (res.status === 429) {
+           setVirtualTokens(0);
+           if (data.nextResetAt) setNextResetAt(data.nextResetAt);
+           toast.error(data.message || 'Daily AI token limit reached.');
+           return;
+        }
+        throw new Error(data.error || 'Failed to auto-grade');
+      }
+
+      if (data.grading) {
+        const newScores = { ...scores };
+        const newFeedback = { ...feedback };
+        
+        data.grading.grades?.forEach(g => {
+          if (g.answerId && g.score !== undefined) newScores[g.answerId] = g.score;
+          if (g.answerId && g.feedback) newFeedback[g.answerId] = g.feedback;
+        });
+        
+        setScores(newScores);
+        setFeedback(newFeedback);
+        if (data.grading.generalFeedback) {
+          setGeneralFeedback(data.grading.generalFeedback);
+        }
+        
+        if (data.remainingTokens !== undefined) {
+          window.dispatchEvent(new CustomEvent('aiTokensUpdate', { detail: data.remainingTokens }));
+        }
+        toast.success('AI Grading Complete! Review the scores below.');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error(err.message || 'Failed to generate AI grades.');
+    } finally {
+      setIsAIGrading(false);
     }
   };
 
@@ -123,7 +198,9 @@ const ActivityGradebook = () => {
                   }`}
                 >
                   <p className="font-bold text-[14px]">
-                    {sub.Student?.profile?.firstName} {sub.Student?.profile?.lastName}
+                    {sub.Student?.profile?.firstName 
+                      ? `${sub.Student.profile.firstName} ${sub.Student.profile.lastName}`
+                      : sub.Student?.email || 'Unknown Student'}
                   </p>
                   <div className="flex justify-between items-center mt-2">
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
@@ -152,17 +229,28 @@ const ActivityGradebook = () => {
               <div className="bg-white dark:bg-[#1A211A] rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-white/10 flex justify-between items-center sticky top-0 z-10">
                 <div>
                   <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-                    {selectedSubmission.Student?.profile?.firstName} {selectedSubmission.Student?.profile?.lastName}
+                    {selectedSubmission.Student?.profile?.firstName 
+                      ? `${selectedSubmission.Student.profile.firstName} ${selectedSubmission.Student.profile.lastName}`
+                      : selectedSubmission.Student?.email || 'Unknown Student'}
                   </h2>
                   <p className="text-sm text-gray-500">Submitted on {new Date(selectedSubmission.submittedAt).toLocaleString()}</p>
                 </div>
-                <button 
-                  onClick={submitGrade}
-                  disabled={isGrading}
-                  className="px-6 py-2.5 bg-[#FFC700] hover:bg-[#FFD633] text-gray-900 font-extrabold text-sm rounded-xl shadow-md transition-all border-none cursor-pointer flex items-center gap-2 disabled:opacity-50"
-                >
-                  {isGrading ? <Loader2 size={16} className="animate-spin" /> : 'Save Grade'}
-                </button>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={handleAIGrade}
+                    disabled={isAIGrading || isGrading || isTokensExhausted()}
+                    className="px-4 py-2.5 bg-purple-50 dark:bg-purple-900/10 hover:bg-purple-100 dark:hover:bg-purple-900/20 text-purple-600 dark:text-purple-400 font-bold text-sm rounded-xl transition-all border-none cursor-pointer flex items-center gap-2 disabled:opacity-50"
+                  >
+                    {isAIGrading ? <Loader2 size={16} className="animate-spin" /> : <><Sparkles size={16} /> Auto-Grade with AI</>}
+                  </button>
+                  <button 
+                    onClick={submitGrade}
+                    disabled={isGrading || isAIGrading}
+                    className="px-6 py-2.5 bg-[#FFC700] hover:bg-[#FFD633] text-gray-900 font-extrabold text-sm rounded-xl shadow-md transition-all border-none cursor-pointer flex items-center gap-2 disabled:opacity-50"
+                  >
+                    {isGrading ? <Loader2 size={16} className="animate-spin" /> : 'Save Grade'}
+                  </button>
+                </div>
               </div>
 
               {activity.questions?.map(q => {
@@ -228,7 +316,73 @@ const ActivityGradebook = () => {
                           )}
                         </div>
                       )}
-                      {!ans?.content?.text && !ans?.content?.code && !ans?.content?.selectedId && !ans?.content?.selectedIds && !ans?.content?.data && !ans?.content?.fileUrl && <span className="text-gray-400 italic">No answer provided</span>}
+                      {ans?.content?.html !== undefined && (() => {
+                        const framework = CSS_FRAMEWORKS.find(fw => fw.id === (ans.content.cssFramework || 'native')) || CSS_FRAMEWORKS[0];
+                        const srcDoc = `
+                          <!DOCTYPE html>
+                          <html>
+                            <head>
+                              <meta charset="UTF-8">
+                              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                              ${framework.cdn}
+                              <style>${ans.content.css || ''}</style>
+                            </head>
+                            <body>
+                              ${ans.content.html || ''}
+                              <script>
+                                try {
+                                  ${ans.content.js || ''}
+                                } catch (err) {
+                                  console.error(err);
+                                }
+                              </script>
+                            </body>
+                          </html>
+                        `;
+                        return (
+                          <div className="flex flex-col gap-4">
+                            <div className="flex flex-col gap-2">
+                              <span className="text-xs font-bold text-[#5D7C59] uppercase tracking-widest">Live Preview ({framework.name})</span>
+                              <div className="bg-white rounded-xl shadow-inner border border-gray-200 overflow-hidden" style={{ minHeight: '300px' }}>
+                                <iframe
+                                  title="Frontend Preview"
+                                  srcDoc={srcDoc}
+                                  className="w-full h-full min-h-[300px] border-none bg-white"
+                                  sandbox="allow-scripts allow-modals allow-same-origin"
+                                />
+                              </div>
+                            </div>
+                            <div className="flex flex-col gap-2 mt-4">
+                              <span className="text-xs font-bold text-[#5D7C59] uppercase tracking-widest">Source Code</span>
+                              {ans.content.html && (
+                                <>
+                                  <span className="text-xs font-bold text-gray-500 uppercase mt-2">HTML</span>
+                                  <pre className="bg-[#1e1e1e] text-gray-300 p-4 rounded-lg text-xs font-mono overflow-x-auto">
+                                    {ans.content.html}
+                                  </pre>
+                                </>
+                              )}
+                              {ans.content.css && (
+                                <>
+                                  <span className="text-xs font-bold text-gray-500 uppercase mt-2">CSS</span>
+                                  <pre className="bg-[#1e1e1e] text-gray-300 p-4 rounded-lg text-xs font-mono overflow-x-auto">
+                                    {ans.content.css}
+                                  </pre>
+                                </>
+                              )}
+                              {ans.content.js && (
+                                <>
+                                  <span className="text-xs font-bold text-gray-500 uppercase mt-2">JS</span>
+                                  <pre className="bg-[#1e1e1e] text-gray-300 p-4 rounded-lg text-xs font-mono overflow-x-auto">
+                                    {ans.content.js}
+                                  </pre>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })()}
+                      {!ans?.content?.text && !ans?.content?.code && !ans?.content?.selectedId && !ans?.content?.selectedIds && !ans?.content?.data && !ans?.content?.fileUrl && ans?.content?.html === undefined && <span className="text-gray-400 italic">No answer provided</span>}
                     </div>
 
                     {ans && (

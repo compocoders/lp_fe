@@ -14,7 +14,7 @@ const CreateChoiceModal = ({ isOpen, onClose, onSelectActivity, onSelectMaterial
     <ModalBackdrop>
       <ModalCard>
         <ModalHeader title="Create New" subtitle="What would you like to add?" onClose={onClose} gradientHeader />
-        <div className="p-5 grid grid-cols-2 gap-4">
+        <div className="p-4 md:p-5 grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
           {options.map(({ icon: Icon, label, desc, action }) => (
             <button
               key={label}

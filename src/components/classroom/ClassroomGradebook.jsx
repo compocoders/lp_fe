@@ -79,29 +79,29 @@ const ClassroomGradebook = ({ classroomId }) => {
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto bg-white dark:bg-[#1A211A]">
+      <div className="flex-1 overflow-auto bg-white dark:bg-[#1A211A] relative">
         <table className="w-full text-left border-collapse min-w-max">
-          <thead className="bg-[#FAFCFA] dark:bg-[#232B23] sticky top-0 z-10 shadow-sm">
+          <thead className="bg-[#FAFCFA] dark:bg-[#232B23] sticky top-0 z-20 shadow-sm">
             <tr>
-              <th className="p-4 border-b border-gray-200 dark:border-white/10 font-bold text-xs text-gray-500 uppercase tracking-wider sticky left-0 bg-[#FAFCFA] dark:bg-[#232B23] z-20 min-w-[200px]">
+              <th className="p-4 border-b border-gray-200 dark:border-white/10 font-bold text-xs text-gray-500 uppercase tracking-wider sticky left-0 bg-[#FAFCFA] dark:bg-[#232B23] z-30 min-w-[220px] shadow-[4px_0_12px_rgba(0,0,0,0.02)] dark:shadow-[4px_0_12px_rgba(0,0,0,0.2)]">
                 Student
               </th>
               {activities.map(act => (
-                <th key={act.id} className="p-4 border-b border-gray-200 dark:border-white/10 min-w-[140px]">
+                <th key={act.id} className="p-4 border-b border-gray-200 dark:border-white/10 min-w-[150px] align-bottom">
                   <div 
                     onClick={() => navigate(`/dashboard/activity/${act.id}`)}
-                    className="flex flex-col gap-1 cursor-pointer group"
+                    className="flex flex-col gap-1.5 cursor-pointer group"
                   >
-                    <span className="font-bold text-[13px] text-gray-800 dark:text-gray-200 group-hover:text-[#5D7C59] transition-colors truncate max-w-[120px]" title={act.title}>
+                    <span className="font-bold text-[13px] text-gray-800 dark:text-gray-200 group-hover:text-[#5D7C59] transition-colors line-clamp-2 leading-tight" title={act.title}>
                       {act.title}
                     </span>
-                    <span className="text-[10px] font-bold text-gray-400 bg-gray-100 dark:bg-white/5 px-2 py-0.5 rounded w-max">
+                    <span className="text-[10px] font-bold text-[#5D7C59] bg-[#5D7C59]/10 dark:bg-[#5D7C59]/20 px-2 py-0.5 rounded w-max border border-[#5D7C59]/20">
                       {act.totalPoints} Pts
                     </span>
                   </div>
                 </th>
               ))}
-              <th className="p-4 border-b border-gray-200 dark:border-white/10 font-bold text-[13px] text-gray-800 dark:text-gray-200 text-right min-w-[120px]">
+              <th className="p-4 border-b border-gray-200 dark:border-white/10 font-bold text-[13px] text-gray-800 dark:text-gray-200 text-right min-w-[120px] bg-[#FAFCFA] dark:bg-[#232B23]">
                 Total
               </th>
             </tr>
@@ -114,12 +114,15 @@ const ClassroomGradebook = ({ classroomId }) => {
               const percentage = classTotalPossible > 0 ? Math.round((studentTotalEarned / classTotalPossible) * 100) : 0;
 
               return (
-                <tr key={row.student.id} className="border-b border-gray-100 dark:border-white/5 hover:bg-gray-50 dark:hover:bg-[#2A342A] transition-colors group">
-                  <td className="p-4 sticky left-0 bg-white dark:bg-[#1A211A] group-hover:bg-gray-50 dark:group-hover:bg-[#2A342A] border-r border-gray-100 dark:border-white/5 flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#5D7C59] to-[#4A6447] flex items-center justify-center text-white text-xs font-bold shrink-0 shadow-sm">
+                <tr key={row.student.id} className="border-b border-gray-100 dark:border-white/5 hover:bg-gray-50/50 dark:hover:bg-[#2A342A]/50 transition-colors group">
+                  <td className="p-4 sticky left-0 bg-white dark:bg-[#1A211A] group-hover:bg-gray-50/50 dark:group-hover:bg-[#2A342A]/50 border-r border-gray-100 dark:border-white/5 flex items-center gap-3 shadow-[4px_0_12px_rgba(0,0,0,0.02)] dark:shadow-[4px_0_12px_rgba(0,0,0,0.2)] z-10">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#5D7C59] to-[#4A6447] flex items-center justify-center text-white text-xs font-bold shrink-0 shadow-sm ring-2 ring-white dark:ring-[#1A211A]">
                       {row.student?.profile?.firstName?.charAt(0)}{row.student?.profile?.lastName?.charAt(0)}
                     </div>
-                    <span className="font-semibold text-[13px] text-gray-800 dark:text-gray-200 truncate max-w-[140px]">{studentName}</span>
+                    <div className="flex flex-col">
+                      <span className="font-semibold text-[13px] text-gray-800 dark:text-gray-200 truncate max-w-[140px]">{studentName}</span>
+                      {row.role === 'OWNER' && <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Teacher</span>}
+                    </div>
                   </td>
                   {row.grades.map(g => {
                     const sub = g.submission;
@@ -129,24 +132,27 @@ const ClassroomGradebook = ({ classroomId }) => {
                     return (
                       <td key={g.activityId} className="p-4 align-middle">
                         <div 
-                          onClick={() => navigate(`/dashboard/activity/${g.activityId}`)}
-                          className="flex items-center gap-2 cursor-pointer group/cell"
+                          onClick={() => navigate(`/dashboard/activity/${g.activityId}/gradebook?studentId=${row.student.id}`)}
+                          className="flex items-center cursor-pointer group/cell w-max"
                         >
-                          <div className={`w-2 h-2 rounded-full shrink-0 ${isGraded ? 'bg-[#5D7C59]' : isSubmitted ? 'bg-blue-500' : 'bg-gray-200 dark:bg-gray-600'}`} />
                           {isGraded ? (
-                            <span className="font-bold text-[13px] text-[#5D7C59] dark:text-[#7A9A7B] group-hover/cell:underline">
-                              {sub.totalScore} <span className="text-[10px] text-gray-400 font-medium">/ {g.totalPoints}</span>
+                            <span className="inline-flex items-center justify-center bg-[#5D7C59]/10 text-[#5D7C59] dark:bg-[#5D7C59]/20 dark:text-[#7A9A7B] text-[12px] font-bold px-2.5 py-1 rounded-md border border-[#5D7C59]/20 transition-colors group-hover/cell:bg-[#5D7C59] group-hover/cell:text-white shadow-sm">
+                              {sub.totalScore} / {g.totalPoints}
                             </span>
                           ) : isSubmitted ? (
-                            <span className="text-[11px] font-bold text-blue-500 bg-blue-500/10 px-2 py-0.5 rounded group-hover/cell:underline">Needs Grading</span>
+                            <span className="inline-flex items-center justify-center bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 text-[11px] font-bold px-2.5 py-1 rounded-md border border-blue-200 dark:border-blue-800/50 transition-colors group-hover/cell:bg-blue-600 group-hover/cell:text-white shadow-sm">
+                              Needs Grading
+                            </span>
                           ) : (
-                            <span className="text-[11px] text-gray-400 font-medium">Missing</span>
+                            <span className="inline-flex items-center justify-center bg-gray-50 text-gray-400 dark:bg-white/5 dark:text-gray-500 text-[11px] font-semibold px-2.5 py-1 rounded-md border border-gray-200 dark:border-white/10 group-hover/cell:bg-gray-100 dark:group-hover/cell:bg-white/10 transition-colors">
+                              Missing
+                            </span>
                           )}
                         </div>
                       </td>
                     );
                   })}
-                  <td className="p-4 text-right">
+                  <td className="p-4 text-right bg-gray-50/30 dark:bg-white/[0.02]">
                     <div className="font-black text-[14px] text-gray-900 dark:text-white">{percentage}%</div>
                     <div className="text-[10px] font-bold text-gray-400">{studentTotalEarned} / {classTotalPossible}</div>
                   </td>

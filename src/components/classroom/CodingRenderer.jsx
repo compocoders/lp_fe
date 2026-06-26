@@ -62,42 +62,38 @@ const CodingRenderer = ({ question, value, onChange, disabled }) => {
   const currentLangConfig = LANGUAGES.find(l => l.id === language);
 
   return (
-    <div className="bg-white dark:bg-[#1A211A] rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-white/10 flex flex-col gap-4">
-      <div className="flex items-start justify-between gap-4">
+    <div className="bg-white dark:bg-[#1A211A] rounded-2xl p-3 sm:p-4 md:p-6 shadow-sm border border-gray-100 dark:border-white/10 flex flex-col gap-3 md:gap-4">
+      <div className="flex items-start justify-between gap-3 md:gap-4">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-[#5D7C59]/10 flex items-center justify-center shrink-0">
             <Code2 size={20} className="text-[#5D7C59]" />
           </div>
-          <h3 className="text-[15px] font-bold text-gray-900 dark:text-white leading-relaxed whitespace-pre-wrap">
+          <h3 className="text-sm md:text-[15px] font-bold text-gray-900 dark:text-white leading-relaxed whitespace-pre-wrap">
             {question.content}
           </h3>
         </div>
-        <span className="text-[11px] font-bold text-gray-400 bg-gray-100 dark:bg-white/5 px-2 py-1 rounded-md shrink-0">
+        <span className="text-[10px] md:text-[11px] font-bold text-gray-400 bg-gray-100 dark:bg-white/5 px-2 py-1 rounded-md shrink-0">
           {question.points} Pts
         </span>
       </div>
 
       <div className="flex flex-col border border-gray-200 dark:border-white/10 rounded-xl overflow-hidden mt-2">
         {/* Editor Header */}
-        <div className="bg-[#FAFCFA] dark:bg-[#232B23] px-4 py-2 flex items-center justify-between border-b border-gray-200 dark:border-white/10 shrink-0">
-          <select 
-            value={language}
-            onChange={handleLanguageChange}
-            disabled={disabled}
-            className="bg-transparent text-sm font-bold text-gray-700 dark:text-gray-300 outline-none cursor-pointer"
-          >
-            {LANGUAGES.map(l => (
-              <option key={l.id} value={l.id} className="bg-white dark:bg-[#1A211A] text-gray-900 dark:text-gray-100">{l.name}</option>
-            ))}
-          </select>
+        <div className="bg-[#FAFCFA] dark:bg-[#232B23] px-3 py-2 md:px-4 md:py-2 flex items-center justify-between border-b border-gray-200 dark:border-white/10 shrink-0">
+          <div className="flex items-center gap-2 px-2 py-1 bg-gray-100 dark:bg-white/5 rounded-md">
+            <span className="text-[12px] font-bold text-gray-700 dark:text-gray-300">
+              {currentLangConfig?.name || 'JavaScript'}
+            </span>
+          </div>
 
           <button
             onClick={runCode}
             disabled={disabled || isRunning}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#5D7C59] hover:bg-[#4A6447] text-white text-[12px] font-bold rounded-lg transition-colors border-none cursor-pointer disabled:opacity-50"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 md:px-3 md:py-1.5 bg-[#5D7C59] hover:bg-[#4A6447] text-white text-[11px] md:text-[12px] font-bold rounded-lg transition-colors border-none cursor-pointer disabled:opacity-50"
           >
-            {isRunning ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} fill="currentColor" />}
-            Run Code
+            {isRunning ? <Loader2 size={12} className="animate-spin md:w-3.5 md:h-3.5" /> : <Play size={12} fill="currentColor" className="md:w-3.5 md:h-3.5" />}
+            <span className="hidden sm:inline">Run Code</span>
+            <span className="sm:hidden">Run</span>
           </button>
         </div>
 

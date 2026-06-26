@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Users, Sparkles, BookOpen, Search, Hand, LogOut, AlertTriangle } from 'lucide-react';
+import { Plus, Users, Sparkles, BookOpen, Search, Hand, LogOut, AlertTriangle, Link2 } from 'lucide-react';
 import { toast } from 'sonner';
 import ClassCard from '../../components/dashboard/ClassCard';
 import Loading from '../../components/common/Loading';
 import CreateClassroomModal from '../../components/dashboard/CreateClassroomModal';
+import JoinRoomModal from '../../components/dashboard/JoinRoomModal';
 import ProfileCard from '../../components/dashboard/ProfileCard';
 import PullToRefresh from '../../components/common/PullToRefresh';
 import { getDashboardData } from '../../api/dashboard.api';
@@ -24,6 +25,7 @@ const DashboardHome = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
   const [isProfileCardOpen, setIsProfileCardOpen] = useState(false);
   const [dashboardData, setDashboardData] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -115,6 +117,14 @@ const DashboardHome = () => {
 
               {/* Profile + Actions */}
               <div className="flex items-center gap-3 shrink-0">
+                <button
+                  onClick={() => setIsJoinModalOpen(true)}
+                  className="flex items-center gap-2 px-4 py-2.5 bg-white/20 hover:bg-white/30 text-white border border-white/30 rounded-xl text-sm font-bold transition-all duration-200 shadow-sm"
+                >
+                  <Link2 size={16} strokeWidth={2.5} />
+                  <span className="hidden sm:inline">Join Room</span>
+                  <span className="sm:hidden">Join</span>
+                </button>
                 <button
                   onClick={() => setIsCreateModalOpen(true)}
                   className="flex items-center gap-2 px-4 py-2.5 bg-[#FFC700] hover:bg-[#FFD633] text-gray-900 rounded-xl text-sm font-bold transition-all duration-200 shadow-md hover:shadow-lg hover:-translate-y-0.5"
@@ -228,13 +238,22 @@ const DashboardHome = () => {
       <CreateClassroomModal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
-        onSuccess={fetchDashboardData}
+        onSuccess={() => {
+          setIsCreateModalOpen(false);
+          fetchDashboardData();
+        }}
+      />
+
+      <JoinRoomModal
+        isOpen={isJoinModalOpen}
+        onClose={() => setIsJoinModalOpen(false)}
       />
 
       <ProfileCard
         isOpen={isProfileCardOpen}
         onClose={() => setIsProfileCardOpen(false)}
-        user={dashboardData}
+        profile={dashboardData?.profile}
+        email={dashboardData?.email}
       />
 
       {/* Leave Classroom Confirm Dialog */}

@@ -202,34 +202,39 @@ const FrontendRenderer = ({ question, value, onChange }) => {
 
         {/* Right: Editor Pane */}
         <div className="flex-1 flex flex-col min-w-0 bg-[#1E1E1E]">
-          <div className="flex items-center justify-between px-4 py-3 bg-[#181818] border-b border-black/50">
-            <div className="flex gap-1 p-0.5 bg-[#252526] rounded-lg border border-white/5">
+          <div className="flex flex-wrap items-center justify-between px-3 sm:px-4 py-2.5 sm:py-3 bg-[#181818] border-b border-black/50 gap-3 sm:gap-4">
+            <div className="flex gap-1 p-0.5 bg-[#252526] rounded-lg border border-white/5 shrink-0">
               {['html', 'css', 'js'].map(lang => (
                 <button
                   key={lang}
                   onClick={() => setActiveTab(lang)}
-                  className={`px-4 py-1.5 text-xs font-bold rounded-md transition-all ${
+                  className={`px-3 sm:px-4 py-1.5 text-[11px] sm:text-xs font-bold rounded-md transition-all uppercase tracking-wider ${
                     activeTab === lang 
                       ? 'bg-[#5D7C59] text-white shadow-sm' 
                       : 'text-gray-400 hover:text-gray-200 hover:bg-white/5'
                   }`}
                 >
-                  {lang.toUpperCase()}
+                  {lang}
                 </button>
               ))}
             </div>
             
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-medium text-gray-400 hidden sm:inline">Framework:</span>
-              <select 
-                value={selectedFramework}
-                onChange={handleFrameworkChange}
-                className="bg-[#2D2D30] border border-white/10 text-xs text-gray-200 py-1.5 px-3 rounded-md outline-none focus:border-[#5D7C59] transition-colors shadow-sm cursor-pointer hover:border-white/20"
-              >
-                {CSS_FRAMEWORKS.map(fw => (
-                  <option key={fw.id} value={fw.id}>{fw.name}</option>
-                ))}
-              </select>
+            <div className="flex items-center gap-2 sm:gap-2.5 ml-auto w-full sm:w-auto justify-end">
+              <span className="text-[11px] sm:text-xs font-semibold text-gray-500 uppercase tracking-widest hidden sm:inline">Framework</span>
+              <div className="relative w-full sm:w-auto">
+                <select 
+                  value={selectedFramework}
+                  onChange={handleFrameworkChange}
+                  className="w-full sm:w-auto bg-[#2D2D30] border border-white/10 text-xs text-gray-200 py-1.5 sm:py-2 pl-3 pr-8 rounded-lg outline-none focus:border-[#5D7C59] transition-colors shadow-sm cursor-pointer hover:border-white/20 appearance-none font-medium"
+                >
+                  {CSS_FRAMEWORKS.map(fw => (
+                    <option key={fw.id} value={fw.id}>{fw.name}</option>
+                  ))}
+                </select>
+                <div className="absolute inset-y-0 right-2 flex items-center pointer-events-none">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400"><path d="m6 9 6 6 6-6"/></svg>
+                </div>
+              </div>
             </div>
           </div>
           
