@@ -56,8 +56,8 @@ const QuizBuilder = ({ questions, setQuestions }) => {
       {questions.map((q, qIndex) => (
         <div key={q.id || qIndex} className="bg-white dark:bg-[#1A211A] rounded-2xl border border-gray-100 dark:border-white/10 shadow-sm overflow-hidden relative transition-colors duration-200">
           <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#5D7C59] rounded-r" />
-          <div className="px-6 py-5">
-            <div className="flex gap-4 items-start mb-5">
+          <div className="px-4 md:px-6 py-4 md:py-5">
+            <div className="flex flex-col sm:flex-row gap-3 md:gap-4 items-start sm:items-center mb-4 md:mb-5">
               <input
                 type="text"
                 placeholder="Question text"

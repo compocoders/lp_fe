@@ -5,12 +5,13 @@ import {
   PenLine, Users, ChevronRight, Clock, Play, Brain, ScrollText, Layers,
   MessageCircle, ChevronDown, BookOpen, Cpu, User, Check,
   Share2, PanelRightOpen, PanelRightClose, Zap, Trash2, Pencil, Download,
-  AlertTriangle, Loader2, Award
+  AlertTriangle, Loader2, Award, X
 } from 'lucide-react';
 import { getClassroomByCode } from '../../api/classroom.api';
 import { getLearningMaterials, deleteLearningMaterial } from '../../api/learningMaterials.api';
 import { motion, AnimatePresence } from 'framer-motion';
 import useAuthStore from '../../store/auth.store';
+import useAIStore from '../../store/ai.store';
 import InviteClassroomModal from '../../components/classroom/InviteClassroomModal';
 import ClassroomDetailsModal from '../../components/classroom/ClassroomDetailsModal';
 import UpdateClassroomModal from '../../components/classroom/UpdateClassroomModal';
@@ -22,6 +23,8 @@ import CreateActivityModal from '../../components/classroom/CreateActivityModal'
 import { listActivities, deleteActivity, publishActivity, closeActivity } from '../../api/activity.api';
 import ClassroomGradebook from '../../components/classroom/ClassroomGradebook';
 import MyGrades from '../../components/classroom/MyGrades';
+import ClassroomIdeaSpark from '../../components/classroom/ClassroomIdeaSpark';
+import { toast } from 'sonner';
 
 /* ─── mock data ─── */
 const MOCK_MATERIALS = [
@@ -65,13 +68,25 @@ const ClassroomDetail = () => {
   const { code } = useParams();
   const navigate = useNavigate();
   const { user } = useAuthStore();
+  const { virtualTokens, isTokensExhausted, setVirtualTokens, setNextResetAt } = useAIStore();
+  
   const [classroom, setClassroom] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('materials');
   const [activeChat, setActiveChat] = useState('chatbox');
-  const [messages, setMessages] = useState([
-    { id: 1, sender: 'ai', text: "Hello! Select a learning material and ask me anything. I'm here to help you understand the content.", typing: false },
-  ]);
+  const [messages, setMessages] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`chat_${code}`);
+      if (saved) return JSON.parse(saved);
+    } catch(e) {}
+    return [
+      { id: 1, sender: 'ai', text: "Hello! Select a learning material and ask me anything. I'm here to help you understand the content.", typing: false },
+    ];
+  });
+
+  useEffect(() => {
+    localStorage.setItem(`chat_${code}`, JSON.stringify(messages));
+  }, [messages, code]);
   const [inputValue, setInputValue] = useState('');
   const [isAiTyping, setIsAiTyping] = useState(false);
 
@@ -93,8 +108,6 @@ const ClassroomDetail = () => {
   const [studioLoading, setStudioLoading] = useState(false);
   const [studioAction, setStudioAction] = useState(null);
   const [chatOpen, setChatOpen] = useState(true);
-  const [selectedModel, setSelectedModel] = useState('Gemini Flash');
-  const [showModelPicker, setShowModelPicker] = useState(false);
   const [showMaterialPicker, setShowMaterialPicker] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
@@ -112,14 +125,11 @@ const ClassroomDetail = () => {
     ['materials', 'Learning Materials', BookOpen],
     ['works', 'Class Works', PenLine],
     ['members', 'Members', Users],
-    ...(isTeacher ? [['gradebook', 'Gradebook', Award]] : [['grades', 'My Grades', Award]])
+    ...(isTeacher ? [['gradebook', 'Gradebook', Award], ['ai-spark', 'AI Spark', Sparkles]] : [['grades', 'My Grades', Award]])
   ];
   const messagesEndRef = useRef(null);
   const msgIdRef = useRef(10);
   const textareaRef = useRef(null);
-
-  const AI_MODELS = ['Gemini Flash', 'Gemini Pro', 'Gemini Ultra'];
-
   const fetchMaterials = useCallback(async (classroomId) => {
     if (!classroomId) return;
     setMaterialsLoading(true);
@@ -203,8 +213,10 @@ const ClassroomDetail = () => {
       const updated = isPublished ? await closeActivity(activity.id) : await publishActivity(activity.id);
       setActivities(prev => prev.map(a => a.id === activity.id ? { ...a, status: updated.status || (isPublished ? 'closed' : 'published') } : a));
       if (selectedWork?.id === activity.id) setSelectedWork(prev => ({ ...prev, status: updated.status || (isPublished ? 'closed' : 'published') }));
+      toast.success(`Activity ${isPublished ? 'closed' : 'published'} successfully!`);
     } catch (e) {
       console.error('Failed to toggle activity status', e);
+      toast.error(e?.response?.data?.message || e?.message || 'Failed to update activity status');
     } finally {
       setTogglingActivityId(null);
     }
@@ -213,7 +225,7 @@ const ClassroomDetail = () => {
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
   useEffect(() => {
-    const handler = () => { setShowModelPicker(false); setShowMaterialPicker(false); };
+    const handler = () => { setShowMaterialPicker(false); };
     document.addEventListener('click', handler);
     return () => document.removeEventListener('click', handler);
   }, []);
@@ -225,27 +237,96 @@ const ClassroomDetail = () => {
     }
   }, [inputValue]);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     const text = inputValue.trim();
     if (!text || isAiTyping) return;
+    
+    if (!selectedMaterial) {
+      toast.warning('Please select a material first so I know what to look at!');
+      return;
+    }
+
     const uid = ++msgIdRef.current;
     setMessages(prev => [...prev, { id: uid, sender: 'user', text, typing: false }]);
     setInputValue('');
     setIsAiTyping(true);
     const tid = ++msgIdRef.current;
     setMessages(prev => [...prev, { id: tid, sender: 'ai', text: '', typing: true }]);
-    setTimeout(() => {
-      const reply = AI_RESPONSES[Math.floor(Math.random() * AI_RESPONSES.length)];
-      setMessages(prev => prev.filter(m => m.id !== tid).concat({ id: ++msgIdRef.current, sender: 'ai', text: reply, typing: false }));
+    
+    try {
+      const token = localStorage.getItem('token');
+      
+      const res = await fetch('http://localhost:3000/api/ai/chat-document', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ message: text, materialId: selectedMaterial.id })
+      });
+      const data = await res.json();
+      
+      if (!res.ok) {
+        if (res.status === 429) {
+           setVirtualTokens(0);
+           if (data.nextResetAt) setNextResetAt(data.nextResetAt);
+           setMessages(prev => prev.filter(m => m.id !== tid).concat({ id: ++msgIdRef.current, sender: 'ai', text: data.message, typing: false }));
+           return;
+        }
+        throw new Error(data.error || 'Failed to chat');
+      }
+      
+      setMessages(prev => prev.filter(m => m.id !== tid).concat({ id: ++msgIdRef.current, sender: 'ai', text: data.reply, typing: false }));
+      if (data.remainingTokens !== undefined) {
+        window.dispatchEvent(new CustomEvent('aiTokensUpdate', { detail: data.remainingTokens }));
+      }
+    } catch (err) {
+      setMessages(prev => prev.filter(m => m.id !== tid).concat({ id: ++msgIdRef.current, sender: 'ai', text: `Error: ${err.message}`, typing: false }));
+    } finally {
       setIsAiTyping(false);
-    }, 1800 + Math.random() * 700);
+    }
   };
 
-  const handleStudio = (type) => {
+  const handleStudio = async (type) => {
+    if (!selectedMaterial) {
+      toast.warning('Please select a material first.');
+      return;
+    }
     setStudioAction(type);
     setStudioOutput(null);
     setStudioLoading(true);
-    setTimeout(() => { setStudioOutput(STUDIO_OUTPUTS[type]); setStudioLoading(false); }, 1500);
+    try {
+      const token = localStorage.getItem('token');
+      const apiType = type === 'quiz' ? 'quiz' : 'notes';
+      const res = await fetch('http://localhost:3000/api/ai/generate-study-material', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ materialId: selectedMaterial.id, type: apiType })
+      });
+      const data = await res.json();
+      
+      if (!res.ok) {
+        if (res.status === 429) {
+           setVirtualTokens(0);
+           if (data.nextResetAt) setNextResetAt(data.nextResetAt);
+           setStudioOutput(`Error: ${data.message || 'Daily AI token limit reached.'}`);
+           return;
+        }
+        throw new Error(data.error || 'Failed to generate');
+      }
+      
+      setStudioOutput(data.content);
+      if (data.remainingTokens !== undefined) {
+        window.dispatchEvent(new CustomEvent('aiTokensUpdate', { detail: data.remainingTokens }));
+      }
+    } catch (err) {
+      setStudioOutput(`Error: ${err.message}`);
+    } finally {
+      setStudioLoading(false);
+    }
   };
 
   if (isLoading) return (
@@ -266,323 +347,20 @@ const ClassroomDetail = () => {
   /* ══ RIGHT PANEL ══ */
   const renderRightPanel = () => {
 
-    /* ── Materials tab: AI Chat panel ── */
+    /* ── Materials tab: AI Studio CTA ── */
     if (activeTab === 'materials') {
       return (
-        <div className="flex shrink-0 items-stretch gap-2 relative chat-panel-container">
-
-          {/* Always-visible toggle tab */}
-          <div className="flex flex-col items-center justify-center shrink-0">
-            <button
-              onClick={() => setChatOpen(p => !p)}
-              title={chatOpen ? 'Hide AI Chat' : 'Show AI Chat'}
-              className={`flex flex-col items-center gap-2 py-5 px-2.5 rounded-xl transition-all cursor-pointer font-sans
-                ${chatOpen
-                  ? 'bg-gradient-to-b from-[#5D7C59] to-[#4A6447] text-white shadow-lg border-0'
-                  : 'bg-white dark:bg-[#1A211A] text-[#5D7C59] border border-gray-200 dark:border-white/10 hover:bg-[#5D7C59]/8 shadow-sm transition-colors duration-200'
-                }`}
-            >
-              {chatOpen ? <PanelRightClose size={16} strokeWidth={2.5} /> : <PanelRightOpen size={16} strokeWidth={2.5} />}
-              <span className="text-[9px] font-bold uppercase" style={{ writingMode: 'vertical-rl', letterSpacing: '0.12em' }}>AI Chat</span>
-              <Zap size={13} strokeWidth={2} className={chatOpen ? 'text-[#FFC700]' : 'text-[#5D7C59]/40'} />
-            </button>
+        <div className="hidden md:flex fixed-right-panel w-[360px] shrink-0 bg-gradient-to-br from-[#5D7C59] to-[#4A6447] rounded-2xl flex-col items-center justify-center p-8 text-center text-white shadow-xl">
+          <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center mb-6">
+            <Sparkles size={32} className="text-[#FFC700]" />
           </div>
-
-          {/* Sliding chat panel */}
-          <div
-            className={`shrink-0 overflow-hidden right-panel-wrapper ${chatOpen ? 'is-open' : 'is-closed'}`}
-            style={{ width: chatOpen ? 370 : 0, transition: 'width 0.38s cubic-bezier(0.4,0,0.2,1)' }}
-          >
-            <div className="w-[370px] h-full flex flex-col bg-white dark:bg-[#1A211A] rounded-2xl shadow-xl overflow-hidden border border-gray-100 dark:border-white/10 right-panel-inner transition-colors duration-200">
-
-              {/* Green gradient header */}
-              <div className="shrink-0 bg-gradient-to-br from-[#5D7C59] to-[#4A6447] px-4 pt-4 pb-0 relative overflow-hidden">
-                <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full bg-[#7A9A7B]/40 pointer-events-none" />
-                <div className="absolute bottom-0 left-1/3 w-14 h-14 rounded-full bg-[#FFC700]/8 pointer-events-none" />
-
-                {/* Logo row */}
-                <div className="relative z-10 flex items-center justify-between mb-3.5">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-xl bg-white/20 border border-white/30 flex items-center justify-center">
-                      <Bot size={16} className="text-white" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-white leading-tight">Likhâ AI</p>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-                        <span className="text-[10px] text-white/65 font-medium">{selectedModel}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setChatOpen(false)}
-                    className="p-1.5 rounded-xl text-white/80 hover:bg-white/20 hover:text-white transition-all cursor-pointer"
-                    style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)' }}
-                  >
-                    <PanelRightClose size={14} strokeWidth={2.5} />
-                  </button>
-                </div>
-
-                {/* Tab switcher */}
-                <div className="relative z-10 flex gap-1">
-                  {[['chatbox', MessageCircle, 'Chat'], ['studio', Sparkles, 'AI Studio']].map(([key, Icon, label]) => (
-                    <button
-                      key={key}
-                      onClick={() => setActiveChat(key)}
-                      className={`flex items-center gap-1.5 px-4 py-2.5 text-[12px] font-bold rounded-t-xl transition-all cursor-pointer
-                        ${activeChat === key ? 'bg-white dark:bg-[#232B23] text-[#4A6447] dark:text-[#7A9A7B]' : 'text-white/65 hover:text-white'}`}
-                      style={{ background: activeChat === key ? 'inherit' : 'rgba(255,255,255,0.1)', border: 'none' }}
-                    >
-                      <Icon size={12} />
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* ══ CHAT ══ */}
-              {activeChat === 'chatbox' && (
-                <div className="flex-1 flex flex-col overflow-hidden bg-[#FAFCFA] dark:bg-[#121612] transition-colors duration-200">
-
-                  {/* Material + model status bar */}
-                  <div className="shrink-0 px-3 py-2 border-b border-gray-100 dark:border-white/10 bg-white dark:bg-[#1A211A] flex items-center gap-2 transition-colors duration-200">
-                    {selectedMaterial !== null ? (
-                      <div className="flex items-center gap-2 bg-[#5D7C59]/8 border border-[#5D7C59]/20 rounded-full px-3 py-1 min-w-0 flex-1">
-                        <div className="w-1.5 h-1.5 rounded-full bg-[#FFC700] shrink-0" />
-                        <span className="text-[11px] font-semibold text-[#4A6447] truncate flex-1">{selectedMaterial?.title}</span>
-                        <button onClick={() => setSelectedMaterial(null)} className="text-[#5D7C59]/50 hover:text-[#5D7C59] text-xs bg-transparent border-none cursor-pointer shrink-0">✕</button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-1.5 text-gray-400 flex-1">
-                        <BookOpen size={12} />
-                        <span className="text-[11px]">No material selected</span>
-                      </div>
-                    )}
-                    {/* Model picker */}
-                    <div className="relative shrink-0">
-                      <button
-                        onClick={e => { e.stopPropagation(); setShowModelPicker(p => !p); setShowMaterialPicker(false); }}
-                        className="flex items-center gap-1 bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 rounded-full px-2.5 py-1 cursor-pointer border-none transition-colors"
-                      >
-                        <Cpu size={10} className="text-gray-500" />
-                        <span className="text-[10px] text-gray-600 font-semibold">{selectedModel}</span>
-                        <ChevronDown size={9} className="text-gray-400" style={{ transform: showModelPicker ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
-                      </button>
-                      {showModelPicker && (
-                        <div onClick={e => e.stopPropagation()} className="absolute top-[110%] right-0 w-44 bg-white dark:bg-[#232B23] rounded-2xl shadow-xl overflow-hidden z-50 border border-gray-100 dark:border-white/10" style={{ animation: 'fadeSlideIn 0.18s ease-out' }}>
-                          <div className="px-3 py-2 border-b border-gray-100 dark:border-white/10">
-                            <p className="text-[10px] font-bold text-[#5D7C59] uppercase tracking-widest">AI Model</p>
-                          </div>
-                          {AI_MODELS.map(model => (
-                            <button key={model} onClick={() => { setSelectedModel(model); setShowModelPicker(false); }}
-                              className={`w-full text-left px-3.5 py-2.5 text-[12.5px] flex items-center gap-2.5 transition-colors cursor-pointer border-none font-sans
-                                ${selectedModel === model ? 'bg-[#5D7C59]/8 dark:bg-[#5D7C59]/20 text-[#5D7C59] dark:text-[#7A9A7B] font-semibold' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 font-normal'}`}>
-                              <Sparkles size={12} className={selectedModel === model ? 'text-[#5D7C59] dark:text-[#7A9A7B]' : 'text-gray-400'} />
-                              {model}
-                              {selectedModel === model && <Check size={12} className="text-[#5D7C59] ml-auto shrink-0" />}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Messages */}
-                  <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-4 messages-area">
-                    {/* Welcome state */}
-                    {messages.length === 1 && (
-                      <div className="flex flex-col items-center pt-4 gap-4" style={{ animation: 'fadeSlideIn 0.5s ease-out' }}>
-                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#5D7C59] to-[#4A6447] flex items-center justify-center shadow-lg">
-                          <Bot size={26} className="text-white" />
-                        </div>
-                        <div className="text-center">
-                          <p className="text-sm font-bold text-gray-800 dark:text-white mb-1">Likhâ AI Assistant</p>
-                          <p className="text-[12px] text-gray-400 dark:text-gray-500 leading-relaxed">Select a material on the left, then<br/>ask me anything about it.</p>
-                        </div>
-                        <div className="w-full grid grid-cols-2 gap-2 mt-1">
-                          {[
-                            { icon: ScrollText, label: 'Summarize this' },
-                            { icon: Brain, label: 'Key concepts?' },
-                            { icon: Layers, label: 'Give me a quiz' },
-                            { icon: BookOpen, label: 'Explain simply' },
-                          ].map(({ icon: Icon, label }) => (
-                            <button
-                              key={label}
-                              onClick={() => setInputValue(label)}
-                              className="flex items-center gap-2 bg-white dark:bg-[#232B23] border border-gray-200 dark:border-white/10 hover:border-[#5D7C59]/40 hover:bg-[#5D7C59]/5 dark:hover:bg-white/5 rounded-xl px-3 py-2.5 text-[11.5px] text-gray-600 dark:text-gray-300 hover:text-[#4A6447] dark:hover:text-[#7A9A7B] font-medium transition-all cursor-pointer text-left"
-                            >
-                              <Icon size={13} className="text-[#5D7C59] shrink-0" />
-                              {label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Messages */}
-                    {messages.map((msg, idx) => {
-                      const isAI = msg.sender === 'ai';
-                      return (
-                        <div
-                          key={msg.id}
-                          className={`flex gap-2.5 ${isAI ? 'items-end' : 'items-end flex-row-reverse'}`}
-                          style={{ animation: idx === messages.length - 1 ? 'fadeSlideIn 0.3s ease-out' : 'none' }}
-                        >
-                          <div className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 shadow-sm mb-0.5
-                            ${isAI ? 'bg-gradient-to-br from-[#5D7C59] to-[#4A6447]' : 'bg-[#FFC700]'}`}>
-                            {isAI ? <Bot size={14} className="text-white" /> : <User size={14} className="text-gray-800" />}
-                          </div>
-                          <div className={`flex flex-col gap-1 max-w-[78%] ${isAI ? 'items-start' : 'items-end'}`}>
-                            <span className={`text-[10px] font-bold px-1 ${isAI ? 'text-[#5D7C59]' : 'text-gray-400'}`}>
-                              {isAI ? 'Likhâ AI' : 'You'}
-                            </span>
-                            <div className={`text-[13px] leading-relaxed whitespace-pre-line break-words px-4 py-2.5 shadow-sm
-                              ${isAI
-                                ? 'bg-white dark:bg-[#232B23] border border-gray-200 dark:border-white/10 text-gray-800 dark:text-gray-200 rounded-tl rounded-tr-2xl rounded-br-2xl rounded-bl-2xl transition-colors duration-200'
-                                : 'bg-gradient-to-br from-[#5D7C59] to-[#4A6447] text-white rounded-2xl rounded-tr rounded-bl-2xl'
-                              }`}>
-                              {msg.typing ? (
-                                <div className="flex gap-1.5 items-center py-0.5">
-                                  {[0, 1, 2].map(i => (
-                                    <div key={i} className="w-2 h-2 rounded-full bg-gray-400"
-                                      style={{ animation: `typingBounce 1.2s ease-in-out ${i * 0.2}s infinite` }} />
-                                  ))}
-                                </div>
-                              ) : msg.text}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                    <div ref={messagesEndRef} />
-                  </div>
-
-                  {/* Input */}
-                  <div className="shrink-0 p-3 bg-white dark:bg-[#1A211A] border-t border-gray-100 dark:border-white/10 transition-colors duration-200">
-                    {/* Material picker button */}
-                    <div className="relative mb-2">
-                      <button
-                        onClick={e => { e.stopPropagation(); setShowMaterialPicker(p => !p); setShowModelPicker(false); }}
-                        className="w-full flex items-center gap-2 bg-[#FAFCFA] dark:bg-[#1A211A] border border-gray-200 dark:border-white/10 hover:border-[#5D7C59]/50 dark:hover:border-[#7A9A7B]/50 rounded-xl px-3 py-2 cursor-pointer transition-all text-left"
-                      >
-                        <BookOpen size={13} className="text-[#5D7C59] dark:text-[#7A9A7B] shrink-0" />
-                        <span className="text-[11.5px] text-gray-400 dark:text-gray-500 font-medium flex-1 truncate">
-                          {selectedMaterial !== null ? selectedMaterial.title : 'Attach a material for context...'}
-                        </span>
-                        <ChevronDown size={12} className="text-gray-400 dark:text-gray-500 shrink-0" style={{ transform: showMaterialPicker ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
-                      </button>
-                      {showMaterialPicker && (
-                        <div onClick={e => e.stopPropagation()} className="absolute bottom-[110%] left-0 right-0 bg-white dark:bg-[#232B23] rounded-2xl shadow-2xl overflow-hidden z-50 border border-gray-100 dark:border-white/10 mb-1" style={{ animation: 'fadeSlideIn 0.18s ease-out' }}>
-                          <div className="px-4 py-2.5 border-b border-gray-100 dark:border-white/10 flex items-center gap-2">
-                            <BookOpen size={13} className="text-[#5D7C59] dark:text-[#7A9A7B]" />
-                            <p className="text-[10px] font-bold text-[#5D7C59] dark:text-[#7A9A7B] uppercase tracking-widest">Select Material</p>
-                          </div>
-                          <div className="max-h-52 overflow-y-auto">
-                            {materials.filter((m, i, arr) => arr.findIndex(x => x.id === m.id) === i).map(mat => (
-                              <button key={mat.id} onClick={() => { setSelectedMaterial(mat); setShowMaterialPicker(false); }}
-                                className={`w-full text-left px-4 py-2.5 text-[12.5px] flex items-center gap-3 transition-colors cursor-pointer border-none font-sans
-                                  ${selectedMaterial?.id === mat.id ? 'bg-[#5D7C59]/8 dark:bg-[#5D7C59]/20 text-[#5D7C59] dark:text-[#7A9A7B] font-semibold' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 font-normal'}`}>
-                                <FileText size={13} className={selectedMaterial?.id === mat.id ? 'text-[#5D7C59] dark:text-[#7A9A7B]' : 'text-gray-400 dark:text-gray-500'} />
-                                <span className="truncate flex-1">{mat.title}</span>
-                                {selectedMaterial?.id === mat.id && <Check size={12} className="text-[#5D7C59] dark:text-[#7A9A7B] shrink-0" />}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Textarea */}
-                    <div className="flex items-end gap-2 bg-[#FAFCFA] dark:bg-[#1A211A] border-2 border-gray-200 dark:border-white/10 rounded-xl px-3.5 pt-3 pb-2.5 focus-within:border-[#5D7C59] dark:focus-within:border-[#7A9A7B] focus-within:bg-white dark:focus-within:bg-[#232B23] transition-all duration-200">
-                      <textarea
-                        ref={textareaRef}
-                        value={inputValue}
-                        onChange={e => setInputValue(e.target.value)}
-                        onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-                        placeholder={isAiTyping ? '✦ Likhâ AI is thinking...' : 'Ask anything about the material...'}
-                        rows={1}
-                        disabled={isAiTyping}
-                        className="flex-1 border-none bg-transparent resize-none text-[13px] text-gray-800 dark:text-gray-200 outline-none font-sans leading-relaxed placeholder:text-gray-400 dark:placeholder:text-gray-500"
-                        style={{ maxHeight: 110, overflowY: 'auto', caretColor: '#5D7C59' }}
-                      />
-                      <button
-                        onClick={handleSend}
-                        disabled={!inputValue.trim() || isAiTyping}
-                        className={`w-9 h-9 rounded-xl border-none flex items-center justify-center shrink-0 transition-all
-                          ${inputValue.trim() && !isAiTyping
-                            ? 'bg-gradient-to-br from-[#5D7C59] to-[#4A6447] hover:scale-105 cursor-pointer shadow-md'
-                            : 'bg-gray-100 cursor-default'
-                          }`}
-                      >
-                        <ArrowUp size={16} className={inputValue.trim() && !isAiTyping ? 'text-white' : 'text-gray-400'} strokeWidth={2.5} />
-                      </button>
-                    </div>
-                    <p className="text-center text-[9.5px] text-gray-300 mt-1.5 tracking-wide">Enter to send · Shift+Enter for new line</p>
-                  </div>
-                </div>
-              )}
-
-              {/* ══ STUDIO ══ */}
-              {activeChat === 'studio' && (
-                <div className="flex-1 flex flex-col overflow-hidden bg-[#FAFCFA] dark:bg-[#121612] transition-colors duration-200">
-                  <div className="px-4 py-3 shrink-0 border-b border-gray-100 dark:border-white/10 bg-white dark:bg-[#1A211A] transition-colors duration-200">
-                    <p className="text-[11px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-widest">Generation Tools</p>
-                    <p className="text-[12px] text-gray-600 dark:text-gray-400 font-medium mt-0.5">Select a material, then generate AI content</p>
-                  </div>
-                  <div className="px-3 pt-3 flex flex-col gap-2 shrink-0">
-                    {[
-                      { key: 'quiz', label: 'Create reviewer quiz', desc: 'Generate Q&A from material', icon: Brain, grad: 'from-purple-500 to-purple-700' },
-                      { key: 'summary', label: 'Create a summary', desc: 'Condense key points', icon: ScrollText, grad: 'from-[#5D7C59] to-[#4A6447]' },
-                      { key: 'overview', label: 'Create an overview', desc: 'High-level topic outline', icon: Layers, grad: 'from-blue-500 to-blue-700' },
-                    ].map(({ key, label, desc, icon: Icon, grad }) => (
-                      <button
-                        key={key}
-                        onClick={() => handleStudio(key)}
-                        className={`flex items-center gap-3 rounded-xl px-4 py-3.5 cursor-pointer transition-all text-left border font-sans w-full
-                          ${studioAction === key ? 'bg-white dark:bg-[#232B23] border-[#5D7C59]/40 shadow-md' : 'bg-white dark:bg-[#1A211A] border-gray-200 dark:border-white/10 hover:border-[#5D7C59]/30 dark:hover:border-white/20 hover:shadow-sm'}`}
-                      >
-                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-gradient-to-br ${grad} shadow-sm`}>
-                          <Icon size={16} className="text-white" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className={`text-[13px] font-semibold ${studioAction === key ? 'text-[#4A6447] dark:text-[#7A9A7B]' : 'text-gray-800 dark:text-gray-200'}`}>{label}</div>
-                          <div className="text-[11px] text-gray-400 dark:text-gray-500">{desc}</div>
-                        </div>
-                        <ChevronRight size={14} className={studioAction === key ? 'text-[#5D7C59]' : 'text-gray-300'} />
-                      </button>
-                    ))}
-                  </div>
-                  <div className="flex-1 overflow-y-auto p-3 messages-area mt-2">
-                    {studioLoading ? (
-                      <div className="flex flex-col items-center justify-center gap-3 h-full pb-8">
-                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#5D7C59] to-[#4A6447] flex items-center justify-center shadow-lg" style={{ animation: 'pulse 1.5s ease-in-out infinite' }}>
-                          <Sparkles size={20} className="text-[#FFC700]" />
-                        </div>
-                        <p className="text-[13px] text-gray-500 font-semibold">Generating with AI...</p>
-                        <p className="text-[11px] text-gray-400">This may take a moment</p>
-                      </div>
-                    ) : studioOutput ? (
-                      <div className="bg-white dark:bg-[#232B23] border border-gray-200 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm transition-colors duration-200" style={{ animation: 'fadeSlideIn 0.4s ease-out' }}>
-                        <div className="px-4 py-3 bg-gradient-to-r from-[#5D7C59] to-[#4A6447] flex items-center gap-2">
-                          <Sparkles size={13} className="text-[#FFC700]" />
-                          <span className="text-[12px] font-bold text-white">
-                            {studioAction === 'quiz' ? 'Reviewer Quiz' : studioAction === 'summary' ? 'Summary' : 'Overview'}
-                          </span>
-                        </div>
-                        <pre className="p-4 text-[12.5px] text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap font-sans">{studioOutput}</pre>
-                      </div>
-                    ) : (
-                      <div className="flex flex-col items-center justify-center h-full gap-3 pb-8">
-                        <div className="w-12 h-12 rounded-2xl bg-gray-100 dark:bg-white/5 flex items-center justify-center">
-                          <Sparkles size={20} className="text-gray-300 dark:text-gray-600" />
-                        </div>
-                        <p className="text-[12.5px] text-gray-400 dark:text-gray-500 text-center font-medium">Pick a tool above to<br/>generate AI content</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
+          <h3 className="text-xl font-bold mb-2">Likhâ AI Studio</h3>
+          <p className="text-sm text-white/80 mb-8 leading-relaxed">
+            Your personal AI tutor and study companion. Generate reviewers, summaries, and chat with your materials.
+          </p>
+          <div className="w-full bg-white/10 rounded-xl p-4 border border-white/20">
+            <p className="text-xs font-semibold mb-1">How to use:</p>
+            <p className="text-[11px] text-white/70">Click "Open AI Studio" on any learning material in the list to start studying!</p>
           </div>
         </div>
       );
@@ -590,18 +368,35 @@ const ClassroomDetail = () => {
 
       if (activeTab === 'works') {
       return (
-        <div className="fixed-right-panel w-[360px] shrink-0 bg-white dark:bg-[#1A211A] rounded-2xl flex flex-col overflow-hidden border border-gray-100 dark:border-white/10 shadow-md transition-colors duration-200">
+        <>
+        {/* Mobile Overlay Background */}
+        {selectedWork && (
+          <div 
+            className="md:hidden fixed inset-0 bg-black/40 z-[90] backdrop-blur-sm"
+            onClick={() => setSelectedWork(null)}
+          />
+        )}
+        <div className={`fixed-right-panel w-[360px] shrink-0 bg-white dark:bg-[#1A211A] rounded-2xl flex flex-col overflow-hidden border border-gray-100 dark:border-white/10 shadow-md transition-colors duration-200 relative
+          ${!selectedWork ? 'max-md:hidden' : 'max-md:fixed max-md:inset-x-4 max-md:bottom-4 max-md:top-24 max-md:z-[100] max-md:shadow-2xl max-md:w-auto'}
+        `}>
           {selectedWork ? (
             <>
+              {/* Close Button for Mobile */}
+              <button
+                onClick={() => setSelectedWork(null)}
+                className="md:hidden absolute top-3 right-3 p-1.5 bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 rounded-full text-gray-600 dark:text-gray-300 z-10 transition-colors"
+              >
+                <X size={18} />
+              </button>
               <div className="h-[140px] bg-gradient-to-br from-[#5D7C59] to-[#4A6447] shrink-0 rounded-t-2xl flex items-center justify-center relative overflow-hidden">
                 <div className="absolute -top-8 -right-8 w-28 h-28 rounded-full bg-white/10" />
                 <div className="absolute -bottom-10 left-6 w-20 h-20 rounded-full bg-black/5" />
-                <div className="absolute top-3 right-3 bg-[#FFC700] text-gray-900 text-[11px] font-bold px-3 py-1 rounded-full shadow-md">100 Points</div>
+                <div className="absolute top-3 max-md:left-3 md:right-3 bg-[#FFC700] text-gray-900 text-[11px] font-bold px-3 py-1 rounded-full shadow-md">100 Points</div>
                 <div className="w-14 h-14 rounded-2xl bg-white/20 border border-white/40 flex items-center justify-center shadow-lg" style={{ animation: 'fadeSlideIn 0.5s ease-out' }}>
                   <PenLine size={26} className="text-white" strokeWidth={2.5} />
                 </div>
               </div>
-              <div className="flex-1 p-5 overflow-y-auto flex flex-col gap-3">
+              <div className="flex-1 p-5 overflow-y-auto flex flex-col gap-3 custom-scrollbar">
                 <div className="flex items-start justify-between gap-2">
                   <h3 className="text-lg font-bold text-gray-900 dark:text-white leading-tight">{selectedWork.title}</h3>
                   <span className={`text-[10px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-lg shrink-0 ${
@@ -670,12 +465,13 @@ const ClassroomDetail = () => {
             </div>
           )}
         </div>
+        </>
       );
     }
 
     if (activeTab === 'members') {
       return (
-        <div className="fixed-right-panel w-[360px] shrink-0 bg-white dark:bg-[#1A211A] rounded-2xl flex flex-col overflow-hidden border border-gray-100 dark:border-white/10 shadow-md p-5 gap-3 transition-colors duration-200">
+        <div className="fixed-right-panel w-[360px] shrink-0 bg-white dark:bg-[#1A211A] rounded-2xl flex flex-col overflow-hidden border border-gray-100 dark:border-white/10 shadow-md p-5 gap-3 transition-colors duration-200 max-md:hidden">
           <div className="flex items-center justify-between mb-1 shrink-0">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-xl bg-[#5D7C59]/10 dark:bg-[#5D7C59]/20 flex items-center justify-center">
@@ -712,6 +508,10 @@ const ClassroomDetail = () => {
 
     if (activeTab === 'gradebook') {
       return <ClassroomGradebook classroomId={classroom.id} />;
+    }
+
+    if (activeTab === 'ai-spark') {
+      return <ClassroomIdeaSpark classroomId={classroom.id} />;
     }
 
     if (activeTab === 'grades') {
@@ -755,8 +555,8 @@ const ClassroomDetail = () => {
             <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${selectedMaterial?.id === mat.id ? 'bg-white/20' : 'bg-[#5D7C59]/10 dark:bg-[#5D7C59]/20'}`}>
               <FileText size={17} className={selectedMaterial?.id === mat.id ? 'text-white' : 'text-[#5D7C59] dark:text-[#7A9A7B]'} strokeWidth={2} />
             </div>
-            <span className={`flex-1 text-[13.5px] font-medium truncate ${selectedMaterial?.id === mat.id ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}>{mat.title}</span>
-            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <span className={`flex-1 text-[13.5px] font-medium line-clamp-2 break-words leading-snug ${selectedMaterial?.id === mat.id ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}>{mat.title}</span>
+            <div className="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
               {mat.fileUrl && (
                 <button
                   onClick={e => { e.stopPropagation(); setPreviewMaterial(mat); }}
@@ -820,7 +620,7 @@ const ClassroomDetail = () => {
                 </span>
               </div>
             </div>
-            <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-all">
+            <div className="flex items-center gap-0.5 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all">
               {isTeacher ? (
                 <>
                   <button
@@ -839,7 +639,7 @@ const ClassroomDetail = () => {
                   </button>
                 </>
               ) : (
-                <button onClick={e => e.stopPropagation()} className={`p-1.5 rounded-lg border-none cursor-pointer bg-transparent opacity-0 group-hover:opacity-100 transition-all ${selectedWork?.id === work.id ? 'text-white/65 hover:bg-white/15' : 'text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-[#5D7C59] dark:hover:text-[#7A9A7B]'}`}><ExternalLink size={14} strokeWidth={2.5} /></button>
+                <button onClick={e => e.stopPropagation()} className={`p-1.5 rounded-lg border-none cursor-pointer bg-transparent opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all ${selectedWork?.id === work.id ? 'text-white/65 hover:bg-white/15' : 'text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-[#5D7C59] dark:hover:text-[#7A9A7B]'}`}><ExternalLink size={14} strokeWidth={2.5} /></button>
               )}
             </div>
           </div>
@@ -880,11 +680,14 @@ const ClassroomDetail = () => {
         .messages-area::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 4px; }
         .left-list::-webkit-scrollbar { width: 4px; }
         .left-list::-webkit-scrollbar-thumb { background: rgba(93,124,89,0.2); border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(93,124,89,0.2); border-radius: 4px; }
+        .custom-scrollbar:hover::-webkit-scrollbar-thumb { background: rgba(93,124,89,0.4); }
         @media (max-width: 768px) {
           .split-container { position: relative; padding: 12px !important; }
           .split-container.tab-works, .split-container.tab-members { flex-direction: column !important; overflow-y: auto !important; }
-          .split-container.tab-works .left-panel-wrapper, .split-container.tab-members .left-panel-wrapper { height: 320px !important; flex: none !important; }
-          .split-container.tab-works .fixed-right-panel, .split-container.tab-members .fixed-right-panel { width: 100% !important; max-width: 100% !important; height: 480px !important; flex: none !important; }
+          .split-container.tab-works .left-panel-wrapper, .split-container.tab-members .left-panel-wrapper { height: auto !important; flex: 1 !important; }
+          .split-container.tab-members .fixed-right-panel { width: 100% !important; max-width: 100% !important; height: auto !important; flex: none !important; }
           .split-container.tab-materials { flex-direction: row !important; overflow: hidden !important; }
           .split-container.tab-materials .left-panel-wrapper { width: 100% !important; flex: 1 !important; height: 100% !important; }
           .chat-panel-container { position: absolute !important; right: 12px; top: 12px; bottom: 12px; z-index: 50; pointer-events: none; }
@@ -933,19 +736,26 @@ const ClassroomDetail = () => {
 
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => setShowInviteModal(true)}
-                  className="flex items-center gap-2 px-3.5 py-2.5 bg-white/10 hover:bg-white/20 text-white border border-white/25 rounded-xl text-xs font-bold transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5 cursor-pointer"
+                  onClick={() => navigate(`/dashboard/classroom/${code}/studio`)}
+                  className="flex items-center justify-center gap-2 w-10 h-10 sm:w-auto sm:px-3.5 sm:py-2.5 bg-[#FFC700] hover:bg-[#FFC700]/90 text-gray-900 border-none rounded-xl text-xs font-bold transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5 cursor-pointer shrink-0"
                 >
-                  <Share2 size={14} strokeWidth={2.5} />
-                  <span>Share</span>
+                  <Sparkles size={16} strokeWidth={2.5} />
+                  <span className="hidden sm:inline">Likhâ AI Studio</span>
+                </button>
+                <button
+                  onClick={() => setShowInviteModal(true)}
+                  className="flex items-center justify-center gap-2 w-10 h-10 sm:w-auto sm:px-3.5 sm:py-2.5 bg-white/10 hover:bg-white/20 text-white border border-white/25 rounded-xl text-xs font-bold transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5 cursor-pointer shrink-0"
+                >
+                  <Share2 size={16} strokeWidth={2.5} />
+                  <span className="hidden sm:inline">Share</span>
                 </button>
                 {isTeacher && (
                   <button
                     onClick={() => setShowCreateChoiceModal(true)}
-                    className="flex items-center gap-2 px-4 py-2.5 bg-[#FFC700] hover:bg-[#FFD633] text-gray-900 font-extrabold text-xs rounded-xl shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all border-none cursor-pointer"
+                    className="flex items-center justify-center gap-2 w-10 h-10 sm:w-auto sm:px-4 sm:py-2.5 bg-[#FFC700] hover:bg-[#FFD633] text-gray-900 font-extrabold text-xs rounded-xl shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all border-none cursor-pointer shrink-0"
                   >
-                    <Plus size={14} strokeWidth={3} />
-                    <span>Create</span>
+                    <Plus size={16} strokeWidth={3} />
+                    <span className="hidden sm:inline">Create</span>
                   </button>
                 )}
                 <div
@@ -966,7 +776,7 @@ const ClassroomDetail = () => {
         {/* Main card */}
         <div className="flex-1 bg-white dark:bg-[#1A211A] rounded-2xl overflow-hidden flex flex-col min-h-0 shadow-sm border border-gray-100 dark:border-white/10 transition-colors duration-200">
           {/* Tabs */}
-          <div className="flex px-5 pt-1 border-b border-gray-100 dark:border-white/10 shrink-0 gap-1 transition-colors duration-200">
+          <div className="flex px-5 pt-1 border-b border-gray-100 dark:border-white/10 shrink-0 gap-1 overflow-x-auto whitespace-nowrap scrollbar-hide transition-colors duration-200">
             {TABS.map(([key, label, Icon]) => (
               <button
                 key={key}
@@ -1120,6 +930,7 @@ const ClassroomDetail = () => {
           onClose={() => setShowCreateActivityModal(false)}
           onSuccess={() => {
             setShowCreateActivityModal(false);
+            setActiveTab('works');
             if (classroom?.id) fetchActivities(classroom.id);
           }}
         />

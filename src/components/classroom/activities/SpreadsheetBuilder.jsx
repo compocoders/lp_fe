@@ -1,6 +1,7 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import Spreadsheet from 'react-spreadsheet';
 import { Plus, Minus } from 'lucide-react';
+import { Parser } from 'hot-formula-parser';
 
 const DEFAULT_DATA = [
   [{ value: "" }, { value: "" }, { value: "" }, { value: "" }],
@@ -18,6 +19,34 @@ const SpreadsheetBuilder = ({ questions, setQuestions }) => {
   }, []);
 
   const problem = questions[0] || { config: {} };
+  const currentData = problem.config?.starterData || DEFAULT_DATA;
+
+  // Initialize parser and bind to data
+  const parser = useMemo(() => {
+    const p = new Parser();
+    p.on('callCellValue', (cellCoord, done) => {
+      const row = cellCoord.row.index;
+      const col = cellCoord.column.index;
+      const cell = currentData[row]?.[col];
+      let val = cell?.value;
+      if (typeof val === 'string' && val.startsWith('=')) {
+        val = p.parse(val.substring(1)).result;
+      } else if (!isNaN(Number(val)) && val !== '') {
+        val = Number(val);
+      }
+      done(val);
+    });
+    return p;
+  }, [currentData]);
+
+  const CustomDataViewer = ({ cell }) => {
+    let displayValue = cell?.value;
+    if (typeof displayValue === 'string' && displayValue.startsWith('=')) {
+      const parsed = parser.parse(displayValue.substring(1));
+      displayValue = parsed.error ? `#${parsed.error}` : parsed.result;
+    }
+    return <span className="text-sm px-1 truncate">{displayValue}</span>;
+  };
 
   const updateProblem = (updates) => {
     const updatedProblem = { ...problem, ...updates };
@@ -30,8 +59,6 @@ const SpreadsheetBuilder = ({ questions, setQuestions }) => {
   const handleSpreadsheetChange = (newData) => {
     updateProblem({ config: { starterData: newData } });
   };
-
-  const currentData = problem.config?.starterData || DEFAULT_DATA;
 
   const addRow = () => {
     const colCount = currentData[0]?.length || 4;
@@ -58,8 +85,8 @@ const SpreadsheetBuilder = ({ questions, setQuestions }) => {
   if (!problem.id) return null;
 
   return (
-    <div className="bg-white dark:bg-[#1A211A] rounded-2xl border border-gray-100 dark:border-white/10 shadow-sm p-6 flex flex-col gap-4 transition-colors duration-200">
-      <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Spreadsheet Task Details</h3>
+    <div className="bg-white dark:bg-[#1A211A] rounded-2xl border border-gray-100 dark:border-white/10 shadow-sm p-4 md:p-6 flex flex-col gap-3 md:gap-4 transition-colors duration-200">
+      <h3 className="text-base md:text-lg font-bold text-gray-900 dark:text-white mb-1 md:mb-2">Spreadsheet Task Details</h3>
       <div className="flex flex-col gap-2">
         <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Prompt / Guidelines</label>
         <textarea
@@ -88,6 +115,9 @@ const SpreadsheetBuilder = ({ questions, setQuestions }) => {
           <Spreadsheet 
             data={currentData} 
             onChange={handleSpreadsheetChange} 
+            CustomComponents={{
+              DataViewer: CustomDataViewer
+            }}
           />
         </div>
       </div>

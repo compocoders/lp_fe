@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import Spreadsheet from 'react-spreadsheet';
 import { Grid, Plus, Minus } from 'lucide-react';
+import { Parser } from 'hot-formula-parser';
 
 const DEFAULT_DATA = [
   [{ value: "" }, { value: "" }, { value: "" }, { value: "" }],
@@ -12,6 +13,33 @@ const DEFAULT_DATA = [
 
 const SpreadsheetRenderer = ({ question, value, onChange, disabled }) => {
   const [data, setData] = useState(value?.data || question?.config?.starterData || DEFAULT_DATA);
+
+  // Initialize parser and bind to data
+  const parser = useMemo(() => {
+    const p = new Parser();
+    p.on('callCellValue', (cellCoord, done) => {
+      const row = cellCoord.row.index;
+      const col = cellCoord.column.index;
+      const cell = data[row]?.[col];
+      let val = cell?.value;
+      if (typeof val === 'string' && val.startsWith('=')) {
+        val = p.parse(val.substring(1)).result;
+      } else if (!isNaN(Number(val)) && val !== '') {
+        val = Number(val);
+      }
+      done(val);
+    });
+    return p;
+  }, [data]);
+
+  const CustomDataViewer = ({ cell }) => {
+    let displayValue = cell?.value;
+    if (typeof displayValue === 'string' && displayValue.startsWith('=')) {
+      const parsed = parser.parse(displayValue.substring(1));
+      displayValue = parsed.error ? `#${parsed.error}` : parsed.result;
+    }
+    return <span className="text-sm px-1 truncate">{displayValue}</span>;
+  };
 
   const handleSpreadsheetChange = (newData) => {
     if (disabled) return;
@@ -77,7 +105,10 @@ const SpreadsheetRenderer = ({ question, value, onChange, disabled }) => {
         <div className="p-2 min-w-max">
           <Spreadsheet 
             data={data} 
-            onChange={handleSpreadsheetChange} 
+            onChange={handleSpreadsheetChange}
+            CustomComponents={{
+              DataViewer: CustomDataViewer
+            }}
           />
         </div>
       </div>

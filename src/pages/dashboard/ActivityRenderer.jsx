@@ -17,12 +17,12 @@ import FrontendRenderer from '../../components/classroom/FrontendRenderer';
 // Helper component for rendering Text Input (Short Answer, Essay, Problem Set)
 const TextAnswerRenderer = ({ question, value, onChange, disabled }) => {
   return (
-    <div className="bg-white dark:bg-[#1A211A] rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-white/10 flex flex-col gap-4">
-      <div className="flex items-start justify-between gap-4">
-        <h3 className="text-[15px] font-bold text-gray-900 dark:text-white leading-relaxed whitespace-pre-wrap">
+    <div className="bg-white dark:bg-[#1A211A] rounded-2xl p-4 md:p-6 shadow-sm border border-gray-100 dark:border-white/10 flex flex-col gap-3 md:gap-4">
+      <div className="flex items-start justify-between gap-3 md:gap-4">
+        <h3 className="text-sm md:text-[15px] font-bold text-gray-900 dark:text-white leading-relaxed whitespace-pre-wrap">
           {question.content}
         </h3>
-        <span className="text-[11px] font-bold text-gray-400 bg-gray-100 dark:bg-white/5 px-2 py-1 rounded-md shrink-0">
+        <span className="text-[10px] md:text-[11px] font-bold text-gray-400 bg-gray-100 dark:bg-white/5 px-2 py-1 rounded-md shrink-0 mt-0.5">
           {question.points} Pts
         </span>
       </div>
@@ -31,7 +31,7 @@ const TextAnswerRenderer = ({ question, value, onChange, disabled }) => {
         onChange={(e) => onChange(question.id, { text: e.target.value })}
         disabled={disabled}
         placeholder="Type your answer here..."
-        className="w-full bg-[#FAFCFA] dark:bg-[#232B23] rounded-xl px-4 py-3 text-[14px] text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-white/10 outline-none focus:border-[#5D7C59] transition-colors min-h-[140px] resize-y disabled:opacity-60"
+        className="w-full bg-[#FAFCFA] dark:bg-[#232B23] rounded-xl px-3 py-2.5 md:px-4 md:py-3 text-[13px] md:text-[14px] text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-white/10 outline-none focus:border-[#5D7C59] transition-colors min-h-[120px] md:min-h-[140px] resize-y disabled:opacity-60"
       />
     </div>
   );
@@ -154,44 +154,46 @@ const ActivityRenderer = () => {
   return (
     <div className="flex-1 flex flex-col h-full bg-[#FAFCFA] dark:bg-[#121612] font-sans">
       {/* Header */}
-      <div className="bg-white dark:bg-[#1A211A] px-6 py-4 border-b border-gray-100 dark:border-white/10 flex items-center justify-between sticky top-0 z-10 shadow-sm shrink-0">
-        <div className="flex items-center gap-3">
+      <div className="bg-white dark:bg-[#1A211A] px-4 md:px-6 py-3 md:py-4 border-b border-gray-100 dark:border-white/10 flex items-center justify-between sticky top-0 z-10 shadow-sm shrink-0 gap-2">
+        <div className="flex items-center gap-2 md:gap-3 flex-1 min-w-0">
           <button 
             onClick={() => navigate(-1)} 
-            className="p-2 mr-2 bg-gray-100 dark:bg-white/5 rounded-full hover:bg-gray-200 dark:hover:bg-white/10 transition-colors border-none cursor-pointer"
+            className="p-1.5 md:p-2 bg-gray-100 dark:bg-white/5 rounded-full hover:bg-gray-200 dark:hover:bg-white/10 transition-colors border-none cursor-pointer shrink-0"
           >
             <ChevronLeft size={18} className="text-gray-600 dark:text-gray-300" />
           </button>
-          <div>
-            <span className="text-base font-bold text-gray-900 dark:text-white">{activity.title}</span>
-            <p className="text-[11px] text-gray-400 dark:text-gray-500">
+          <div className="min-w-0 flex-1">
+            <span className="text-sm md:text-base font-bold text-gray-900 dark:text-white truncate block leading-tight">{activity.title}</span>
+            <p className="text-[10px] md:text-[11px] text-gray-400 dark:text-gray-500 truncate mt-0.5">
               {activity.activityType || 'Activity'} • {activity.totalPoints} Points
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 md:gap-3 shrink-0">
           {showActive && (
             <button 
               onClick={handleSubmit}
               disabled={isSubmitting}
-              className="px-5 py-2 bg-[#FFC700] hover:bg-[#FFD633] text-gray-900 font-extrabold text-sm rounded-xl shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all border-none cursor-pointer flex items-center gap-2 disabled:opacity-50"
+              className="px-3 py-2 md:px-5 md:py-2 bg-[#FFC700] hover:bg-[#FFD633] text-gray-900 font-extrabold text-[11px] md:text-sm rounded-xl shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all border-none cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
             >
-              {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : 'Submit Activity'}
+              {isSubmitting ? <Loader2 size={14} className="animate-spin" /> : null}
+              <span className="hidden sm:inline">Submit Activity</span>
+              <span className="sm:hidden">Submit</span>
             </button>
           )}
           {isTeacher && (
             <button 
               onClick={() => navigate(`/dashboard/activity/${activityId}/gradebook`)}
-              className="px-4 py-2 bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 text-gray-800 dark:text-white rounded-xl text-sm font-bold transition-all border-none cursor-pointer"
+              className="px-3 py-2 md:px-4 md:py-2 bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 text-gray-800 dark:text-white rounded-xl text-[11px] md:text-sm font-bold transition-all border-none cursor-pointer"
             >
-              Grade Submissions
+              Grade<span className="hidden sm:inline"> Submissions</span>
             </button>
           )}
         </div>
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-y-auto p-6 max-w-4xl mx-auto w-full flex flex-col gap-6">
+      <div className="flex-1 overflow-y-auto p-4 md:p-6 max-w-4xl mx-auto w-full flex flex-col gap-4 md:gap-6">
         
         {/* Intro view */}
         {showIntro && (

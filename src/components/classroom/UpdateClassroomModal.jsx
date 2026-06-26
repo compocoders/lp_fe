@@ -49,7 +49,7 @@ const UpdateClassroomModal = ({ isOpen, onClose, classroom, onSuccess }) => {
     <ModalBackdrop>
       <ModalCard>
         <ModalHeader title="Update Classroom" subtitle="Modify your classroom's information." onClose={onClose} gradientHeader />
-        <div className="px-6 py-5 flex flex-col gap-4">
+        <div className="px-4 md:px-6 py-4 md:py-5 flex flex-col gap-4">
           {updateError && (
             <div className="px-4 py-3 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-600 dark:text-red-400 rounded-xl text-sm font-medium flex items-center gap-2 transition-colors">
               <X size={15} className="shrink-0 text-red-550 dark:text-red-400" /> {updateError}

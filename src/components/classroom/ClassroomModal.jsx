@@ -10,7 +10,7 @@ export const ModalBackdrop = ({ children }) => (
     transition={{ duration: 0.15 }}
     className="absolute inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[1000] p-4 md:p-6"
   >
-    <div onClick={e => e.stopPropagation()} className="w-full max-w-lg">
+    <div onClick={e => e.stopPropagation()} className="w-full max-w-lg p-3 md:p-0">
       {children}
     </div>
   </motion.div>
@@ -30,12 +30,12 @@ export const ModalCard = ({ children, className = '' }) => (
 
 export const ModalHeader = ({ title, subtitle, onClose, gradientHeader = false }) => (
   gradientHeader ? (
-    <div className="bg-gradient-to-br from-[#5D7C59] to-[#4A6447] px-6 pt-5 pb-7 relative overflow-hidden">
+    <div className="bg-gradient-to-br from-[#5D7C59] to-[#4A6447] px-4 md:px-6 pt-4 md:pt-5 pb-5 md:pb-7 relative overflow-hidden">
       <div className="absolute -top-8 -right-8 w-28 h-28 rounded-full bg-[#7A9A7B]/40 pointer-events-none" />
       <div className="relative z-10 flex items-start justify-between">
         <div>
-          <h2 className="text-lg font-bold text-white">{title}</h2>
-          {subtitle && <p className="text-white/65 text-xs mt-0.5">{subtitle}</p>}
+          <h2 className="text-base md:text-lg font-bold text-white leading-tight">{title}</h2>
+          {subtitle && <p className="text-white/65 text-[11px] md:text-xs mt-0.5">{subtitle}</p>}
         </div>
         <button onClick={onClose} className="p-1.5 rounded-xl text-white/70 hover:text-white hover:bg-white/15 transition-colors border-none bg-transparent cursor-pointer">
           <X size={18} strokeWidth={2.5} />
@@ -43,12 +43,12 @@ export const ModalHeader = ({ title, subtitle, onClose, gradientHeader = false }
       </div>
     </div>
   ) : (
-    <div className="px-6 py-5 border-b border-gray-100 dark:border-white/10 flex items-start justify-between transition-colors duration-200">
+    <div className="px-4 md:px-6 py-4 md:py-5 border-b border-gray-100 dark:border-white/10 flex items-start justify-between transition-colors duration-200">
       <div>
-        <h2 className="text-lg font-bold text-gray-900 dark:text-white">{title}</h2>
-        {subtitle && <p className="text-gray-500 dark:text-gray-400 text-xs mt-0.5">{subtitle}</p>}
+        <h2 className="text-base md:text-lg font-bold text-gray-900 dark:text-white leading-tight">{title}</h2>
+        {subtitle && <p className="text-gray-500 dark:text-gray-400 text-[11px] md:text-xs mt-0.5">{subtitle}</p>}
       </div>
-      <button onClick={onClose} className="p-1.5 rounded-full text-[#5D7C59] bg-[#5D7C59]/10 hover:bg-[#5D7C59]/20 transition-colors border-none cursor-pointer">
+      <button onClick={onClose} className="p-1.5 rounded-full text-[#5D7C59] bg-[#5D7C59]/10 hover:bg-[#5D7C59]/20 transition-colors border-none cursor-pointer shrink-0 ml-3">
         <X size={18} strokeWidth={2.5} />
       </button>
     </div>
@@ -82,7 +82,7 @@ export const FormTextarea = ({ label, value, onChange, placeholder, rows = 3 }) 
 );
 
 export const ModalFooter = ({ children, className = '' }) => (
-  <div className={`px-6 py-4 bg-[#FAFCFA] dark:bg-[#1A211A] border-t border-gray-100 dark:border-white/10 flex justify-end gap-3 transition-colors duration-200 ${className}`}>
+  <div className={`px-4 md:px-6 py-3 md:py-4 bg-[#FAFCFA] dark:bg-[#1A211A] border-t border-gray-100 dark:border-white/10 flex justify-end gap-2 md:gap-3 transition-colors duration-200 ${className}`}>
     {children}
   </div>
 );

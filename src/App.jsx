@@ -7,6 +7,7 @@ import CreateProfile from './pages/profilePage/CreateProfile';
 import Mainpage from './pages/dashboard/Mainpage';
 import DashboardHome from './pages/dashboard/DashboardHome';
 import ClassroomDetail from './pages/dashboard/ClassroomDetail';
+import AiStudioPage from './pages/dashboard/AiStudioPage';
 import ActivityRenderer from './pages/dashboard/ActivityRenderer';
 import ActivityGradebook from './pages/dashboard/ActivityGradebook';
 import JoinClassroomPage from './pages/dashboard/JoinClassroomPage';
@@ -29,6 +30,8 @@ function App() {
             <Route path="/dashboard" element={<Mainpage/>}>
               <Route index element={<DashboardHome />} />
               <Route path="classroom/:code" element={<ClassroomDetail />} />
+              <Route path="classroom/:code/studio" element={<AiStudioPage />} />
+              <Route path="classroom/:code/studio/:materialId" element={<AiStudioPage />} />
               <Route path="activity/:activityId" element={<ActivityRenderer />} />
               <Route path="activity/:activityId/gradebook" element={<ActivityGradebook />} />
               <Route path="settings" element={<Settings />} />

@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
   Home, Users, CheckSquare, Settings, ChevronDown,
   ClipboardList, X, LogOut, BookOpen, GraduationCap, Plus
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import TokenWidget from '../common/TokenWidget';
 
 // Auto-assign a color from the landing page palette based on class name
 const CLASS_COLORS = [
@@ -25,6 +26,25 @@ const Sidebar = ({ onClose, onLogout, dashboardData }) => {
   const navigate = useNavigate();
   const enrolledClasses = dashboardData?.classrooms?.filter(c => c.userId !== dashboardData.id) || [];
   const teachingClasses = dashboardData?.classrooms?.filter(c => c.userId === dashboardData.id) || [];
+  
+  const [tokens, setTokens] = useState(dashboardData?.virtualTokens || 10000);
+
+  useEffect(() => {
+    if (dashboardData?.virtualTokens !== undefined) {
+      setTokens(dashboardData.virtualTokens);
+    }
+  }, [dashboardData]);
+
+  useEffect(() => {
+    const handleTokensUpdate = (e) => {
+      if (e.detail !== undefined) {
+        setTokens(e.detail);
+      }
+    };
+    window.addEventListener('aiTokensUpdate', handleTokensUpdate);
+    return () => window.removeEventListener('aiTokensUpdate', handleTokensUpdate);
+  }, []);
+
   const [openGroups, setOpenGroups] = useState({
     classes: true,
     teaching: true,
@@ -205,6 +225,14 @@ const Sidebar = ({ onClose, onLogout, dashboardData }) => {
             </motion.div>
           )}
         </AnimatePresence>
+      </div>
+
+      {/* AI Controls */}
+      <div className="px-3 py-3 border-t border-gray-100 dark:border-white/10 shrink-0 bg-gradient-to-tr from-[#5D7C59]/5 to-transparent">
+        <div className="flex flex-col gap-2">
+          <span className="text-xs font-bold text-gray-500 uppercase tracking-wider px-1">AI Assistant</span>
+          <TokenWidget compact={true} />
+        </div>
       </div>
 
       {/* Footer */}
