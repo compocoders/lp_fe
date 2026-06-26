@@ -184,7 +184,7 @@ const AiStudioPage = () => {
            setMessages(prev => [...prev, { id: Date.now().toString(), sender: 'ai', content: data.message }]);
            return;
         }
-        throw new Error("Failed to send");
+        throw new Error(data.message || "Failed to send");
       }
 
       setMessages(prev => [...prev, { id: Date.now().toString(), sender: 'ai', content: data.reply }]);
@@ -195,7 +195,7 @@ const AiStudioPage = () => {
         window.dispatchEvent(new CustomEvent('aiTokensUpdate', { detail: data.remainingTokens }));
       }
     } catch (e) {
-      setMessages(prev => [...prev, { id: Date.now().toString(), sender: 'ai', content: "Error sending message" }]);
+      setMessages(prev => [...prev, { id: Date.now().toString(), sender: 'ai', content: e.message || "Error sending message" }]);
     } finally {
       setIsTyping(false);
     }
