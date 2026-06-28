@@ -109,8 +109,10 @@ const ActivityGradebook = () => {
     try {
       setIsAIGrading(true);
       const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:3000/api/ai/grade-submission', {
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+      const res = await fetch(`${baseUrl}/ai/grade-submission`, {
         method: 'POST',
+        credentials: 'include',
         headers: { 
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`

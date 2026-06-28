@@ -243,8 +243,10 @@ const MaterialPreviewModal = ({ isOpen, onClose, material }) => {
 
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:3000/api/ai/generate-study-material', {
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+      const res = await fetch(`${baseUrl}/ai/generate-study-material`, {
         method: 'POST',
+        credentials: 'include',
         headers: { 
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
@@ -283,9 +285,11 @@ const MaterialPreviewModal = ({ isOpen, onClose, material }) => {
       const token = localStorage.getItem('token');
       // Dispatch an event to get the model or just use flash
       const aiModel = 'flash'; 
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
       
-      const res = await fetch('http://localhost:3000/api/ai/chat-document', {
+      const res = await fetch(`${baseUrl}/ai/chat-document`, {
         method: 'POST',
+        credentials: 'include',
         headers: { 
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`

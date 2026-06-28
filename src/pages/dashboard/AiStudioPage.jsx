@@ -82,9 +82,10 @@ const AiStudioPage = () => {
   const fetchHistory = async () => {
     const token = localStorage.getItem('token');
     try {
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
       const [convRes, matRes] = await Promise.all([
-        fetch(`http://localhost:3000/api/studio/conversations/material/${activeMaterialId}`, { headers: { 'Authorization': `Bearer ${token}` } }),
-        fetch(`http://localhost:3000/api/studio/study-materials/material/${activeMaterialId}`, { headers: { 'Authorization': `Bearer ${token}` } })
+        fetch(`${baseUrl}/studio/conversations/material/${activeMaterialId}`, { credentials: 'include', headers: { 'Authorization': `Bearer ${token}` } }),
+        fetch(`${baseUrl}/studio/study-materials/material/${activeMaterialId}`, { credentials: 'include', headers: { 'Authorization': `Bearer ${token}` } })
       ]);
       const convs = await convRes.json();
       const mats = await matRes.json();
@@ -98,7 +99,9 @@ const AiStudioPage = () => {
   const fetchMessages = async (id) => {
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch(`http://localhost:3000/api/studio/conversations/${id}/messages`, {
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+      const res = await fetch(`${baseUrl}/studio/conversations/${id}/messages`, {
+        credentials: 'include',
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -116,8 +119,10 @@ const AiStudioPage = () => {
     
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch(`http://localhost:3000/api/studio/conversations`, {
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+      const res = await fetch(`${baseUrl}/studio/conversations`, {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ materialId: activeMaterialId, title: "New Conversation" })
       });
@@ -133,8 +138,10 @@ const AiStudioPage = () => {
   const handleToggleSave = async (id, isSaved) => {
     const token = localStorage.getItem('token');
     try {
-      await fetch(`http://localhost:3000/api/studio/conversations/${id}/save`, {
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+      await fetch(`${baseUrl}/studio/conversations/${id}/save`, {
         method: 'PATCH',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ isSaved })
       });
@@ -148,8 +155,10 @@ const AiStudioPage = () => {
     if (!window.confirm("Delete this conversation?")) return;
     const token = localStorage.getItem('token');
     try {
-      await fetch(`http://localhost:3000/api/studio/conversations/${id}`, {
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+      await fetch(`${baseUrl}/studio/conversations/${id}`, {
         method: 'DELETE',
+        credentials: 'include',
         headers: { 'Authorization': `Bearer ${token}` }
       });
       setConversations(prev => prev.filter(c => c.id !== id));
@@ -170,8 +179,10 @@ const AiStudioPage = () => {
     
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch(`http://localhost:3000/api/studio/conversations/${activeThreadId}/messages`, {
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+      const res = await fetch(`${baseUrl}/studio/conversations/${activeThreadId}/messages`, {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ text })
       });
@@ -211,9 +222,11 @@ const AiStudioPage = () => {
 
     const token = localStorage.getItem('token');
     const apiType = type === 'quiz' ? 'quiz' : type; 
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
     try {
-      const res = await fetch('http://localhost:3000/api/ai/generate-study-material', {
+      const res = await fetch(`${baseUrl}/ai/generate-study-material`, {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ materialId: activeMaterialId, type: apiType })
       });
@@ -231,8 +244,9 @@ const AiStudioPage = () => {
 
       setStudioOutput({ type, content: data.content, isLoading: false });
       
-      const saveRes = await fetch(`http://localhost:3000/api/studio/study-materials`, {
+      const saveRes = await fetch(`${baseUrl}/studio/study-materials`, {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ materialId: activeMaterialId, type, content: data.content })
       });
