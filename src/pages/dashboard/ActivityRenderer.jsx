@@ -18,13 +18,20 @@ import FrontendRenderer from '../../components/classroom/FrontendRenderer';
 const TextAnswerRenderer = ({ question, value, onChange, disabled }) => {
   return (
     <div className="bg-white dark:bg-[#1A211A] rounded-2xl p-4 md:p-6 shadow-sm border border-gray-100 dark:border-white/10 flex flex-col gap-3 md:gap-4">
-      <div className="flex items-start justify-between gap-3 md:gap-4">
-        <h3 className="text-sm md:text-[15px] font-bold text-gray-900 dark:text-white leading-relaxed whitespace-pre-wrap">
-          {question.content}
-        </h3>
-        <span className="text-[10px] md:text-[11px] font-bold text-gray-400 bg-gray-100 dark:bg-white/5 px-2 py-1 rounded-md shrink-0 mt-0.5">
+      <div className="flex items-start justify-between gap-3 md:gap-4 mb-1">
+        <div>
+          <h3 className="text-[15px] font-bold text-gray-900 dark:text-white">Written Response</h3>
+          <p className="text-[12px] text-gray-500 dark:text-gray-400">Read the instructions and provide your answer below.</p>
+        </div>
+        <span className="text-[11px] font-bold text-blue-600 bg-blue-50 dark:bg-blue-500/10 px-2.5 py-1 rounded-md shrink-0 mt-0.5">
           {question.points} Pts
         </span>
+      </div>
+      
+      <div className="bg-gray-50 dark:bg-black/20 p-4 rounded-xl border border-gray-100 dark:border-white/5">
+        <div className="text-[14px] text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
+          {question.content}
+        </div>
       </div>
       <textarea
         value={value?.text || ''}
@@ -113,10 +120,14 @@ const ActivityRenderer = () => {
   };
 
   const handleSubmit = async () => {
-    const answerPayload = Object.entries(answers).map(([questionId, content]) => ({
-      questionId,
-      content
-    }));
+    const validQuestionIds = new Set(activity?.questions?.map(q => q.id) || []);
+    
+    const answerPayload = Object.entries(answers)
+      .filter(([questionId]) => validQuestionIds.has(questionId))
+      .map(([questionId, content]) => ({
+        questionId,
+        content
+      }));
 
     if (answerPayload.length === 0) {
       toast.warning('Please answer at least one question before submitting.');

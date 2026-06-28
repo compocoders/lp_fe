@@ -27,6 +27,29 @@ const Sidebar = ({ onClose, onLogout, dashboardData }) => {
   const enrolledClasses = dashboardData?.classrooms?.filter(c => c.userId !== dashboardData.id) || [];
   const teachingClasses = dashboardData?.classrooms?.filter(c => c.userId === dashboardData.id) || [];
   
+  const now = new Date();
+  
+  const todoItems = enrolledClasses.flatMap(cls => 
+    (cls.activities || [])
+      .filter(act => {
+        if (act.submissions && act.submissions.length > 0) return false;
+        if (act.deadline && new Date(act.deadline) < now) return false;
+        return true;
+      })
+      .map(act => {
+        const dateStr = act.deadline 
+          ? new Date(act.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+          : 'No due date';
+        return {
+          title: act.title,
+          sub: cls.name,
+          dateText: act.deadline ? `Due ${dateStr}` : dateStr,
+          id: act.id,
+          roomCode: cls.roomCode
+        };
+      })
+  );
+  
   const [tokens, setTokens] = useState(dashboardData?.virtualTokens || 10000);
 
   useEffect(() => {
@@ -137,7 +160,7 @@ const Sidebar = ({ onClose, onLogout, dashboardData }) => {
               transition={{ duration: 0.25 }}
               className="overflow-hidden"
             >
-              <div className="flex flex-col gap-0.5 mt-1 mb-2">
+              <div className="flex flex-col gap-0.5 mt-1 mb-2 max-h-[200px] overflow-y-auto [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-gray-200 dark:[&::-webkit-scrollbar-thumb]:bg-[#2A342A] [&::-webkit-scrollbar-track]:transparent pr-1">
                 {enrolledClasses.length > 0 ? enrolledClasses.map(cls => {
                   const color = getClassColor(cls.name);
                   return (
@@ -171,7 +194,7 @@ const Sidebar = ({ onClose, onLogout, dashboardData }) => {
               transition={{ duration: 0.25 }}
               className="overflow-hidden"
             >
-              <div className="flex flex-col gap-0.5 mt-1 mb-2">
+              <div className="flex flex-col gap-0.5 mt-1 mb-2 max-h-[200px] overflow-y-auto [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-gray-200 dark:[&::-webkit-scrollbar-thumb]:bg-[#2A342A] [&::-webkit-scrollbar-track]:transparent pr-1">
                 {teachingClasses.length > 0 ? teachingClasses.map(cls => {
                   const color = getClassColor(cls.name);
                   return (
@@ -205,22 +228,25 @@ const Sidebar = ({ onClose, onLogout, dashboardData }) => {
               transition={{ duration: 0.25 }}
               className="overflow-hidden"
             >
-              <div className="flex flex-col gap-1 mt-1 mb-2 px-4">
-                {[
-                  { title: 'Performance Task', sub: 'BSIT 3G - IT ELEC', date: 'June 9, 2027' },
-                  { title: 'Performance Task', sub: 'BSIT 3G - IT ELEC', date: 'June 9, 2027' },
-                ].map((todo, i) => (
-                  <div key={i} className="flex items-start gap-3 py-2 cursor-pointer group">
+              <div className="flex flex-col gap-1 mt-1 mb-2 px-4 max-h-[280px] overflow-y-auto [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-gray-200 dark:[&::-webkit-scrollbar-thumb]:bg-[#2A342A] [&::-webkit-scrollbar-track]:transparent pr-1">
+                {todoItems.length > 0 ? todoItems.map((todo, i) => (
+                  <div 
+                    key={i} 
+                    onClick={() => { navigate(`/dashboard/activity/${todo.id}`); onClose && onClose(); }}
+                    className="flex items-start gap-3 py-2 cursor-pointer group"
+                  >
                     <div className="w-5 h-5 rounded-md border-2 border-[#5D7C59] dark:border-[#7A9A7B] shrink-0 mt-0.5 flex items-center justify-center group-hover:bg-[#5D7C59]/10 dark:group-hover:bg-[#7A9A7B]/20 transition-colors">
                       <ClipboardList size={10} className="text-[#5D7C59] dark:text-[#7A9A7B]" strokeWidth={2.5} />
                     </div>
-                    <div className="leading-tight">
-                      <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">{todo.title}</p>
-                      <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">{todo.sub}</p>
-                      <p className="text-[10px] text-[#FFC700] font-semibold mt-0.5">Due {todo.date}</p>
+                    <div className="leading-tight flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 truncate">{todo.title}</p>
+                      <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5 truncate">{todo.sub}</p>
+                      <p className="text-[10px] text-[#FFC700] font-semibold mt-0.5 truncate">{todo.dateText}</p>
                     </div>
                   </div>
-                ))}
+                )) : (
+                  <p className="text-xs text-gray-400 italic py-1.5">No pending tasks</p>
+                )}
               </div>
             </motion.div>
           )}

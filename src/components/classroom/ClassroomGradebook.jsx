@@ -55,9 +55,9 @@ const ClassroomGradebook = ({ classroomId }) => {
 
   return (
     <div className="w-full h-full flex flex-col overflow-hidden bg-white dark:bg-[#1A211A] rounded-2xl shadow-sm border border-gray-100 dark:border-white/10">
-      <div className="shrink-0 px-6 py-4 border-b border-gray-100 dark:border-white/10 flex items-center justify-between bg-[#FAFCFA] dark:bg-[#232B23]">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#5D7C59]/10 flex items-center justify-center">
+      <div className="shrink-0 px-4 sm:px-6 py-4 border-b border-gray-100 dark:border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-[#FAFCFA] dark:bg-[#232B23]">
+        <div className="flex items-center gap-3 w-full sm:w-auto">
+          <div className="w-10 h-10 rounded-xl bg-[#5D7C59]/10 flex items-center justify-center shrink-0">
             <Users size={20} className="text-[#5D7C59]" />
           </div>
           <div>
@@ -65,7 +65,7 @@ const ClassroomGradebook = ({ classroomId }) => {
             <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">{students.length} Students</p>
           </div>
         </div>
-        <div className="relative w-64">
+        <div className="relative w-full sm:w-64 shrink-0">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <Search size={14} className="text-gray-400" />
           </div>
@@ -83,11 +83,11 @@ const ClassroomGradebook = ({ classroomId }) => {
         <table className="w-full text-left border-collapse min-w-max">
           <thead className="bg-[#FAFCFA] dark:bg-[#232B23] sticky top-0 z-20 shadow-sm">
             <tr>
-              <th className="p-4 border-b border-gray-200 dark:border-white/10 font-bold text-xs text-gray-500 uppercase tracking-wider sticky left-0 bg-[#FAFCFA] dark:bg-[#232B23] z-30 min-w-[220px] shadow-[4px_0_12px_rgba(0,0,0,0.02)] dark:shadow-[4px_0_12px_rgba(0,0,0,0.2)]">
+              <th className="p-3 sm:p-4 border-b border-gray-200 dark:border-white/10 font-bold text-xs text-gray-500 uppercase tracking-wider bg-[#FAFCFA] dark:bg-[#232B23] min-w-[160px] sm:min-w-[220px]">
                 Student
               </th>
               {activities.map(act => (
-                <th key={act.id} className="p-4 border-b border-gray-200 dark:border-white/10 min-w-[150px] align-bottom">
+                <th key={act.id} className="p-3 sm:p-4 border-b border-gray-200 dark:border-white/10 min-w-[150px] align-bottom">
                   <div 
                     onClick={() => navigate(`/dashboard/activity/${act.id}`)}
                     className="flex flex-col gap-1.5 cursor-pointer group"
@@ -101,7 +101,7 @@ const ClassroomGradebook = ({ classroomId }) => {
                   </div>
                 </th>
               ))}
-              <th className="p-4 border-b border-gray-200 dark:border-white/10 font-bold text-[13px] text-gray-800 dark:text-gray-200 text-right min-w-[120px] bg-[#FAFCFA] dark:bg-[#232B23]">
+              <th className="p-3 sm:p-4 border-b border-gray-200 dark:border-white/10 font-bold text-[13px] text-gray-800 dark:text-gray-200 text-right min-w-[120px] bg-[#FAFCFA] dark:bg-[#232B23]">
                 Total
               </th>
             </tr>
@@ -115,12 +115,12 @@ const ClassroomGradebook = ({ classroomId }) => {
 
               return (
                 <tr key={row.student.id} className="border-b border-gray-100 dark:border-white/5 hover:bg-gray-50/50 dark:hover:bg-[#2A342A]/50 transition-colors group">
-                  <td className="p-4 sticky left-0 bg-white dark:bg-[#1A211A] group-hover:bg-gray-50/50 dark:group-hover:bg-[#2A342A]/50 border-r border-gray-100 dark:border-white/5 flex items-center gap-3 shadow-[4px_0_12px_rgba(0,0,0,0.02)] dark:shadow-[4px_0_12px_rgba(0,0,0,0.2)] z-10">
+                  <td className="p-3 sm:p-4 bg-white dark:bg-[#1A211A] group-hover:bg-gray-50/50 dark:group-hover:bg-[#2A342A]/50 border-r border-gray-100 dark:border-white/5 flex items-center gap-2 sm:gap-3">
                     <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#5D7C59] to-[#4A6447] flex items-center justify-center text-white text-xs font-bold shrink-0 shadow-sm ring-2 ring-white dark:ring-[#1A211A]">
                       {row.student?.profile?.firstName?.charAt(0)}{row.student?.profile?.lastName?.charAt(0)}
                     </div>
-                    <div className="flex flex-col">
-                      <span className="font-semibold text-[13px] text-gray-800 dark:text-gray-200 truncate max-w-[140px]">{studentName}</span>
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <span className="font-semibold text-[13px] text-gray-800 dark:text-gray-200 truncate w-full">{studentName}</span>
                       {row.role === 'OWNER' && <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Teacher</span>}
                     </div>
                   </td>
@@ -130,7 +130,7 @@ const ClassroomGradebook = ({ classroomId }) => {
                     const isSubmitted = sub?.status === 'submitted' || sub?.status === 'late';
                     
                     return (
-                      <td key={g.activityId} className="p-4 align-middle">
+                      <td key={g.activityId} className="p-3 sm:p-4 align-middle">
                         <div 
                           onClick={() => navigate(`/dashboard/activity/${g.activityId}/gradebook?studentId=${row.student.id}`)}
                           className="flex items-center cursor-pointer group/cell w-max"
@@ -152,7 +152,7 @@ const ClassroomGradebook = ({ classroomId }) => {
                       </td>
                     );
                   })}
-                  <td className="p-4 text-right bg-gray-50/30 dark:bg-white/[0.02]">
+                  <td className="p-3 sm:p-4 text-right bg-gray-50/30 dark:bg-white/[0.02]">
                     <div className="font-black text-[14px] text-gray-900 dark:text-white">{percentage}%</div>
                     <div className="text-[10px] font-bold text-gray-400">{studentTotalEarned} / {classTotalPossible}</div>
                   </td>

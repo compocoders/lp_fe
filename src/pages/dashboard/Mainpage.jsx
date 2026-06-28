@@ -28,20 +28,21 @@ const Mainpage = () => {
     }
   }, [navigate]);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const data = await getDashboardData();
-        setDashboardData(data);
-      } catch (error) {
-        console.error('Error fetching dashboard data:', error);
-        if (error?.response?.status === 401 || error?.response?.status === 403) {
-          handleLogout();
-        }
+  const fetchDashboardData = React.useCallback(async () => {
+    try {
+      const data = await getDashboardData();
+      setDashboardData(data);
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+      if (error?.response?.status === 401 || error?.response?.status === 403) {
+        handleLogout();
       }
-    };
-    fetchData();
+    }
   }, [handleLogout]);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, [fetchDashboardData]);
 
   return (
     <div className="flex h-[100dvh] bg-[#FAFCFA] dark:bg-[#121612] overflow-hidden relative font-sans transition-colors duration-200">
@@ -93,7 +94,7 @@ const Mainpage = () => {
 
         {/* Page content */}
         <div className="flex-1 overflow-hidden">
-          <Outlet />
+          <Outlet context={{ dashboardData, fetchDashboardData }} />
         </div>
       </div>
     </div>

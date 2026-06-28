@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-const MAX_TOKENS = 500;
+const MAX_TOKENS = 50000;
 
 const useAIStore = create((set, get) => ({
   selectedModel: 'flash',

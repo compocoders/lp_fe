@@ -73,18 +73,25 @@ const SpreadsheetRenderer = ({ question, value, onChange, disabled }) => {
 
   return (
     <div className="bg-white dark:bg-[#1A211A] rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-white/10 flex flex-col gap-4">
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex items-start justify-between gap-4 mb-2">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0">
             <Grid size={20} className="text-emerald-600 dark:text-emerald-500" />
           </div>
-          <h3 className="text-[15px] font-bold text-gray-900 dark:text-white leading-relaxed whitespace-pre-wrap">
-            {question.content}
-          </h3>
+          <div>
+            <h3 className="text-[15px] font-bold text-gray-900 dark:text-white">Spreadsheet Task</h3>
+            <p className="text-[12px] text-gray-500 dark:text-gray-400">Complete the spreadsheet based on the given instructions.</p>
+          </div>
         </div>
-        <span className="text-[11px] font-bold text-gray-400 bg-gray-100 dark:bg-white/5 px-2 py-1 rounded-md shrink-0">
+        <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 px-2.5 py-1 rounded-md shrink-0">
           {question.points} Pts
         </span>
+      </div>
+
+      <div className="bg-gray-50 dark:bg-black/20 p-4 md:p-5 rounded-xl border border-gray-100 dark:border-white/5">
+        <div className="text-[14px] text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
+          {question.content}
+        </div>
       </div>
 
       <div className={`mt-2 border border-gray-200 dark:border-white/10 rounded-xl overflow-x-auto bg-white ${disabled ? 'opacity-75 pointer-events-none' : ''}`}>

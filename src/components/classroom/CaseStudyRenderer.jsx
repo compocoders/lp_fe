@@ -14,9 +14,9 @@ const CaseStudyRenderer = ({ question, value, onChange, disabled }) => {
   };
 
   return (
-    <div className="bg-white dark:bg-[#1A211A] rounded-2xl shadow-sm border border-gray-100 dark:border-white/10 overflow-hidden flex flex-col md:flex-row">
-      {/* Left Pane: Scenario & Attachments */}
-      <div className="md:w-1/2 p-6 border-b md:border-b-0 md:border-r border-gray-100 dark:border-white/10 flex flex-col gap-6 bg-[#FAFCFA] dark:bg-[#232B23]">
+    <div className="bg-white dark:bg-[#1A211A] rounded-2xl shadow-sm border border-gray-100 dark:border-white/10 overflow-hidden flex flex-col">
+      {/* Top Pane: Scenario & Attachments */}
+      <div className="w-full p-6 border-b border-gray-100 dark:border-white/10 flex flex-col gap-6 bg-[#FAFCFA] dark:bg-[#232B23]">
         <div className="flex items-center gap-3 mb-2">
           <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center shrink-0">
             <FileText size={20} className="text-indigo-600 dark:text-indigo-500" />
@@ -60,8 +60,8 @@ const CaseStudyRenderer = ({ question, value, onChange, disabled }) => {
         )}
       </div>
 
-      {/* Right Pane: Student Response Area */}
-      <div className="md:w-1/2 p-6 flex flex-col gap-4">
+      {/* Bottom Pane: Student Response Area */}
+      <div className="w-full p-6 flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <h3 className="text-md font-bold text-gray-900 dark:text-white">Your Analysis</h3>
           <span className="text-[11px] font-bold text-gray-400 bg-gray-100 dark:bg-white/5 px-2 py-1 rounded-md shrink-0">

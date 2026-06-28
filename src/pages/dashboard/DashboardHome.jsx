@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useOutletContext } from 'react-router-dom';
 import { Plus, Users, Sparkles, BookOpen, Search, Hand, LogOut, AlertTriangle, Link2 } from 'lucide-react';
 import { toast } from 'sonner';
 import ClassCard from '../../components/dashboard/ClassCard';
@@ -8,7 +8,6 @@ import CreateClassroomModal from '../../components/dashboard/CreateClassroomModa
 import JoinRoomModal from '../../components/dashboard/JoinRoomModal';
 import ProfileCard from '../../components/dashboard/ProfileCard';
 import PullToRefresh from '../../components/common/PullToRefresh';
-import { getDashboardData } from '../../api/dashboard.api';
 
 const getGreeting = () => {
   const hour = new Date().getHours();
@@ -23,24 +22,13 @@ const getDay = () => {
 
 const DashboardHome = () => {
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(true);
+  const { dashboardData, fetchDashboardData } = useOutletContext();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
   const [isProfileCardOpen, setIsProfileCardOpen] = useState(false);
-  const [dashboardData, setDashboardData] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [confirmLeave, setConfirmLeave] = useState(null); // { classroomId, name }
-
-  const fetchDashboardData = async () => {
-    try {
-      const response = await getDashboardData();
-      setDashboardData(response);
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error);
-      toast.error('Failed to load your classrooms. Pull down to retry.');
-    }
-  };
 
   const handleLeaveClassroom = async (classroomId) => {
     try {
@@ -70,11 +58,6 @@ const DashboardHome = () => {
       setIsProcessing(false);
     }
   };
-
-  useEffect(() => {
-    setIsLoading(true);
-    fetchDashboardData().finally(() => setIsLoading(false));
-  }, []);
 
   const firstName = dashboardData?.profile?.firstName || 'there';
   const allClassrooms = dashboardData?.classrooms || [];
@@ -189,7 +172,7 @@ const DashboardHome = () => {
           </div>
 
           {/* ── Class Grid ── */}
-          {isLoading ? (
+          {!dashboardData ? (
             <Loading text="Loading Classes..." />
           ) : filtered.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">

@@ -63,18 +63,25 @@ const CodingRenderer = ({ question, value, onChange, disabled }) => {
 
   return (
     <div className="bg-white dark:bg-[#1A211A] rounded-2xl p-3 sm:p-4 md:p-6 shadow-sm border border-gray-100 dark:border-white/10 flex flex-col gap-3 md:gap-4">
-      <div className="flex items-start justify-between gap-3 md:gap-4">
+      <div className="flex items-start justify-between gap-3 md:gap-4 mb-2">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-[#5D7C59]/10 flex items-center justify-center shrink-0">
             <Code2 size={20} className="text-[#5D7C59]" />
           </div>
-          <h3 className="text-sm md:text-[15px] font-bold text-gray-900 dark:text-white leading-relaxed whitespace-pre-wrap">
-            {question.content}
-          </h3>
+          <div>
+            <h3 className="text-[15px] font-bold text-gray-900 dark:text-white">Coding Task</h3>
+            <p className="text-[12px] text-gray-500 dark:text-gray-400">Write your code below based on the requirements.</p>
+          </div>
         </div>
-        <span className="text-[10px] md:text-[11px] font-bold text-gray-400 bg-gray-100 dark:bg-white/5 px-2 py-1 rounded-md shrink-0">
+        <span className="text-[11px] font-bold text-[#5D7C59] bg-[#5D7C59]/10 px-2.5 py-1 rounded-md shrink-0">
           {question.points} Pts
         </span>
+      </div>
+
+      <div className="bg-gray-50 dark:bg-black/20 p-4 rounded-xl border border-gray-100 dark:border-white/5">
+        <div className="text-[14px] text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
+          {question.content}
+        </div>
       </div>
 
       <div className="flex flex-col border border-gray-200 dark:border-white/10 rounded-xl overflow-hidden mt-2">
