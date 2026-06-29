@@ -20,8 +20,28 @@ export const logout = async () => {
   return response.data;
 };
 
+export const verifyResetOTP = async (data) => {
+  const response = await api.post('/auth/verify-reset-otp', data);
+  return response.data;
+};
+
+export const resetPassword = async (data) => {
+  const response = await api.post('/auth/reset-password', data);
+  return response.data;
+};
+
+export const requestEmailUpdate = async (data) => {
+  const response = await api.post('/auth/request-email-update', data);
+  return response.data;
+};
+
 export const updateEmail = async (data) => {
   const response = await api.put('/auth/update-email', data);
+  return response.data;
+};
+
+export const resendVerification = async () => {
+  const response = await api.post('/auth/resend-verification');
   return response.data;
 };
 
@@ -30,3 +50,12 @@ export const updatePassword = async (data) => {
   return response.data;
 };
  
+export const verifyEmail = async (data) => {
+  const response = await api.post('/auth/verify-email', data);
+  return response.data;
+};
+
+export const forgotPassword = async (data) => {
+  const response = await api.post('/auth/forgot-password', data);
+  return response.data;
+};

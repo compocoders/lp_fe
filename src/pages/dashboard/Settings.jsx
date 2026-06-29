@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import useThemeStore from '../../store/theme.store';
 import { Settings as SettingsIcon, User, Moon, Sun, Monitor, Bell, Shield, Camera, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { getProfile, updateProfile } from '../../api/profile.api';
-import { updateEmail, updatePassword, getMe } from '../../api/auth.api';
+import { updatePassword, getMe } from '../../api/auth.api';
+import UpdateEmailModal from '../../components/settings/UpdateEmailModal';
 
 const Settings = () => {
   const { theme, setTheme } = useThemeStore();
@@ -298,14 +299,13 @@ const ProfileSettings = () => {
 };
 
 const SecuritySettings = () => {
-  const [emailData, setEmailData] = useState({ currentPassword: '', newEmail: '' });
   const [pwData, setPwData] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
   const [currentEmail, setCurrentEmail] = useState('');
   
-  const [emailLoading, setEmailLoading] = useState(false);
+  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
   const [pwLoading, setPwLoading] = useState(false);
   
-  const [emailStatus, setEmailStatus] = useState({ type: '', msg: '' });
+  const [emailSuccessMsg, setEmailSuccessMsg] = useState('');
   const [pwStatus, setPwStatus] = useState({ type: '', msg: '' });
 
   useEffect(() => {
@@ -322,21 +322,10 @@ const SecuritySettings = () => {
     fetchMe();
   }, []);
 
-  const handleEmailChange = async (e) => {
-    e.preventDefault();
-    setEmailLoading(true);
-    setEmailStatus({ type: '', msg: '' });
-    try {
-      await updateEmail(emailData);
-      setEmailStatus({ type: 'success', msg: 'Email updated successfully!' });
-      setCurrentEmail(emailData.newEmail);
-      setEmailData({ currentPassword: '', newEmail: '' });
-      setTimeout(() => setEmailStatus({ type: '', msg: '' }), 4000);
-    } catch (err) {
-      setEmailStatus({ type: 'error', msg: err.response?.data?.message || 'Failed to update email' });
-    } finally {
-      setEmailLoading(false);
-    }
+  const handleEmailUpdated = (newEmail) => {
+    setCurrentEmail(newEmail);
+    setEmailSuccessMsg('Email updated successfully!');
+    setTimeout(() => setEmailSuccessMsg(''), 4000);
   };
 
   const handlePasswordChange = async (e) => {
@@ -377,50 +366,31 @@ const SecuritySettings = () => {
           </div>
         </div>
         
-        <form onSubmit={handleEmailChange} className="p-6 flex flex-col gap-5">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">New Email Address</label>
-              <input
-                type="email"
-                required
-                value={emailData.newEmail}
-                onChange={(e) => setEmailData(p => ({ ...p, newEmail: e.target.value }))}
-                placeholder="new@example.com"
-                className="px-4 py-2.5 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-[#5D7C59]/30 focus:border-[#5D7C59] outline-none text-gray-900 dark:text-white transition-all text-sm"
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Current Password</label>
-              <input
-                type="password"
-                required
-                value={emailData.currentPassword}
-                onChange={(e) => setEmailData(p => ({ ...p, currentPassword: e.target.value }))}
-                placeholder="Verify your password"
-                className="px-4 py-2.5 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-[#5D7C59]/30 focus:border-[#5D7C59] outline-none text-gray-900 dark:text-white transition-all text-sm"
-              />
-            </div>
-          </div>
-
-          {emailStatus.msg && (
-            <div className={`p-3 rounded-lg text-sm flex items-center gap-2 ${emailStatus.type === 'error' ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400' : 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400'}`}>
-              {emailStatus.type === 'error' ? <AlertCircle size={16} /> : <CheckCircle2 size={16} />}
-              {emailStatus.msg}
+        <div className="p-6 flex flex-col gap-5">
+          {emailSuccessMsg && (
+            <div className="p-3 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-lg text-sm flex items-center gap-2">
+              <CheckCircle2 size={16} />
+              {emailSuccessMsg}
             </div>
           )}
-
+          
           <div className="flex justify-end pt-2">
             <button
-              type="submit"
-              disabled={emailLoading}
-              className="flex items-center gap-2 px-5 py-2.5 bg-gray-900 dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100 text-white dark:text-gray-900 rounded-xl text-sm font-bold transition-colors shadow-sm disabled:opacity-70 disabled:cursor-not-allowed"
+              onClick={() => setIsEmailModalOpen(true)}
+              className="px-5 py-2.5 bg-[#5D7C59] hover:bg-[#4A6447] text-white rounded-xl text-sm font-bold transition-colors shadow-sm"
             >
-              {emailLoading ? <Loader2 size={18} className="animate-spin" /> : 'Update Email'}
+              Update Email
             </button>
           </div>
-        </form>
+        </div>
       </div>
+
+      <UpdateEmailModal 
+        isOpen={isEmailModalOpen} 
+        onClose={() => setIsEmailModalOpen(false)} 
+        currentEmail={currentEmail}
+        onEmailUpdated={handleEmailUpdated}
+      />
 
       {/* Change Password */}
       <div className="bg-white dark:bg-[#1A211A] rounded-2xl border border-gray-100 dark:border-white/10 shadow-sm overflow-hidden transition-colors duration-200">
@@ -482,7 +452,7 @@ const SecuritySettings = () => {
             <button
               type="submit"
               disabled={pwLoading}
-              className="flex items-center gap-2 px-5 py-2.5 bg-gray-900 dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100 text-white dark:text-gray-900 rounded-xl text-sm font-bold transition-colors shadow-sm disabled:opacity-70 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 px-5 py-2.5 bg-[#5D7C59] hover:bg-[#4A6447] text-white rounded-xl text-sm font-bold transition-colors shadow-sm disabled:opacity-70 disabled:cursor-not-allowed"
             >
               {pwLoading ? <Loader2 size={18} className="animate-spin" /> : 'Change Password'}
             </button>

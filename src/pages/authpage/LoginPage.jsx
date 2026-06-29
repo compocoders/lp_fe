@@ -116,7 +116,12 @@ export default function LoginPage() {
             </motion.div>
 
             <motion.div variants={fadeUpVariant} className="space-y-2">
-              <label className="text-[#698864] font-bold text-sm ml-1 block">Password</label>
+              <div className="flex justify-between items-center ml-1">
+                <label className="text-[#698864] font-bold text-sm block">Password</label>
+                <Link to="/forgot-password" className="text-sm font-bold text-[#698864] hover:underline underline-offset-4 mr-1">
+                  Forgot Password?
+                </Link>
+              </div>
               <input
                 type="password"
                 value={password}

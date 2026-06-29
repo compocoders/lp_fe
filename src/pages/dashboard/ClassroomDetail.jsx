@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useOutletContext } from 'react-router-dom';
 import {
   Plus, FileText, ExternalLink, MoreVertical, ArrowUp, Bot, Sparkles,
   PenLine, Users, ChevronRight, Clock, Play, Brain, ScrollText, Layers,
@@ -68,6 +68,7 @@ const ClassroomDetail = () => {
   const { code } = useParams();
   const navigate = useNavigate();
   const { user } = useAuthStore();
+  const { dashboardData } = useOutletContext();
   const { virtualTokens, isTokensExhausted, setVirtualTokens, setNextResetAt } = useAIStore();
   
   const [classroom, setClassroom] = useState(null);
@@ -119,7 +120,8 @@ const ClassroomDetail = () => {
   const [deleteConfirmActivity, setDeleteConfirmActivity] = useState(null);
   const [togglingActivityId, setTogglingActivityId] = useState(null);
 
-  const isTeacher = classroom?.userId === user?.id || classroom?.classroomUsers?.find(u => u.userId === user?.id)?.role === 'OWNER';
+  const currentUserId = dashboardData?.id || user?.id;
+  const isTeacher = classroom?.userId === currentUserId || classroom?.classroomUsers?.find(u => u.userId === currentUserId)?.role === 'OWNER';
 
   const TABS = [
     ['materials', 'Learning Materials', BookOpen],
