@@ -7,7 +7,7 @@ import {
   Share2, PanelRightOpen, PanelRightClose, Zap, Trash2, Pencil, Download,
   AlertTriangle, Loader2, Award, X
 } from 'lucide-react';
-import { getClassroomByCode } from '../../api/classroom.api';
+import { getClassroomByCode, removeMember } from '../../api/classroom.api';
 import { getLearningMaterials, deleteLearningMaterial } from '../../api/learningMaterials.api';
 import { motion, AnimatePresence } from 'framer-motion';
 import useAuthStore from '../../store/auth.store';
@@ -119,6 +119,25 @@ const ClassroomDetail = () => {
   const [deletingActivityId, setDeletingActivityId] = useState(null);
   const [deleteConfirmActivity, setDeleteConfirmActivity] = useState(null);
   const [togglingActivityId, setTogglingActivityId] = useState(null);
+  const [removingMemberId, setRemovingMemberId] = useState(null);
+
+  const handleRemoveMember = async (memberId) => {
+    if (!window.confirm("Are you sure you want to remove this member from the classroom?")) return;
+    setRemovingMemberId(memberId);
+    try {
+      await removeMember(classroom.id, memberId);
+      setClassroom(prev => ({
+        ...prev,
+        classroomUsers: prev.classroomUsers.filter(u => u.userId !== memberId)
+      }));
+      toast.success('Member removed successfully');
+    } catch (e) {
+      console.error('Failed to remove member', e);
+      toast.error(e?.response?.data?.message || 'Failed to remove member');
+    } finally {
+      setRemovingMemberId(null);
+    }
+  };
 
   const currentUserId = dashboardData?.id || user?.id;
   const isTeacher = classroom?.userId === currentUserId || classroom?.classroomUsers?.find(u => u.userId === currentUserId)?.role === 'OWNER';
@@ -360,7 +379,7 @@ const ClassroomDetail = () => {
           <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center mb-6">
             <Sparkles size={32} className="text-[#FFC700]" />
           </div>
-          <h3 className="text-xl font-bold mb-2">Likhâ AI Studio</h3>
+          <h3 className="text-xl font-bold mb-2">L I K H Â AI Studio</h3>
           <p className="text-sm text-white/80 mb-8 leading-relaxed">
             Your personal AI tutor and study companion. Generate reviewers, summaries, and chat with your materials.
           </p>
@@ -493,8 +512,12 @@ const ClassroomDetail = () => {
             {(classroom?.classroomUsers || []).map(member => (
               <div key={member.userId} className="flex items-center gap-3 p-3.5 bg-[#FAFCFA] dark:bg-[#232B23] border border-gray-100 dark:border-white/5 rounded-xl hover:border-[#5D7C59]/30 dark:hover:border-[#7A9A7B]/40 hover:-translate-y-0.5 hover:shadow-sm dark:hover:shadow-none transition-all cursor-pointer">
                 <div className="relative shrink-0">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#5D7C59] to-[#4A6447] flex items-center justify-center text-white font-bold text-sm shadow-sm">
-                    {member.User?.profile?.firstName?.charAt(0)}{member.User?.profile?.lastName?.charAt(0)}
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#5D7C59] to-[#4A6447] flex items-center justify-center text-white font-bold text-sm shadow-sm overflow-hidden shrink-0">
+                    {member.User?.profile?.profilePicture ? (
+                  <img src={member.User.profile.profilePicture} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <>{member.User?.profile?.firstName?.charAt(0)}{member.User?.profile?.lastName?.charAt(0)}</>
+                )}
                   </div>
                   <div className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-green-400 border-2 border-white dark:border-[#232B23]" />
                 </div>
@@ -504,6 +527,16 @@ const ClassroomDetail = () => {
                 </div>
                 {member.role === 'OWNER' && (
                   <span className="text-[10px] font-bold bg-[#FFC700]/15 dark:bg-[#FFC700]/25 text-[#4A6447] dark:text-[#FFC700] px-2.5 py-1 rounded-full shrink-0">Owner</span>
+                )}
+                {isTeacher && member.role !== 'OWNER' && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleRemoveMember(member.userId); }}
+                    disabled={removingMemberId === member.userId}
+                    className="p-1.5 rounded-lg border-none cursor-pointer bg-transparent transition-all text-gray-400 dark:text-gray-500 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500 dark:hover:text-red-400 shrink-0"
+                    title="Remove member"
+                  >
+                    {removingMemberId === member.userId ? <Loader2 size={13} className="animate-spin" /> : <X size={14} strokeWidth={2.5} />}
+                  </button>
                 )}
               </div>
             ))}
@@ -658,8 +691,12 @@ const ClassroomDetail = () => {
         {(classroom?.classroomUsers || []).map(member => (
           <div key={member.userId} className="flex items-center gap-3 px-4 py-3 bg-white/50 dark:bg-white/[0.02] backdrop-blur-md border border-gray-100 dark:border-white/10 rounded-xl hover:bg-white/80 dark:hover:bg-white/[0.04] hover:border-[#5D7C59]/30 dark:hover:border-[#7A9A7B]/40 hover:shadow-sm dark:hover:shadow-none transition-all cursor-pointer">
             <div className="relative shrink-0">
-              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#5D7C59] to-[#4A6447] flex items-center justify-center text-white font-bold text-sm">
-                {member.User?.profile?.firstName?.charAt(0)}{member.User?.profile?.lastName?.charAt(0)}
+              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#5D7C59] to-[#4A6447] flex items-center justify-center text-white font-bold text-sm overflow-hidden shrink-0">
+                {member.User?.profile?.profilePicture ? (
+                  <img src={member.User.profile.profilePicture} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <>{member.User?.profile?.firstName?.charAt(0)}{member.User?.profile?.lastName?.charAt(0)}</>
+                )}
               </div>
               <div className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-green-400 border-2 border-white dark:border-[#1A211A]" />
             </div>
@@ -669,6 +706,16 @@ const ClassroomDetail = () => {
             </div>
             {member.role === 'OWNER' && (
               <span className="text-[10px] font-bold bg-[#5D7C59]/10 dark:bg-[#5D7C59]/20 text-[#5D7C59] dark:text-[#7A9A7B] px-2.5 py-1 rounded-full">Teacher</span>
+            )}
+            {isTeacher && member.role !== 'OWNER' && (
+              <button
+                onClick={(e) => { e.stopPropagation(); handleRemoveMember(member.userId); }}
+                disabled={removingMemberId === member.userId}
+                className="p-1.5 rounded-lg border-none cursor-pointer bg-transparent transition-all text-gray-400 dark:text-gray-500 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500 dark:hover:text-red-400"
+                title="Remove member"
+              >
+                {removingMemberId === member.userId ? <Loader2 size={14} className="animate-spin" /> : <X size={15} strokeWidth={2.5} />}
+              </button>
             )}
           </div>
         ))}
@@ -746,7 +793,7 @@ const ClassroomDetail = () => {
                   className="flex items-center justify-center gap-2 w-10 h-10 sm:w-auto sm:px-3.5 sm:py-2.5 bg-[#FFC700] hover:bg-[#FFC700]/90 text-gray-900 border-none rounded-xl text-xs font-bold transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5 cursor-pointer shrink-0"
                 >
                   <Sparkles size={16} strokeWidth={2.5} />
-                  <span className="hidden sm:inline">Likhâ AI Studio</span>
+                  <span className="hidden sm:inline">L I K H Â AI Studio</span>
                 </button>
                 <button
                   onClick={() => setShowInviteModal(true)}
@@ -820,6 +867,7 @@ const ClassroomDetail = () => {
               isOpen={showDetailsModal}
               onClose={() => setShowDetailsModal(false)}
               classroom={classroom}
+              isTeacher={isTeacher}
               onUpdateClick={() => { setShowDetailsModal(false); setShowUpdateModal(true); }}
             />
           )}

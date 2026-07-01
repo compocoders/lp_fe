@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { 
   Bot, User, Sparkles, Plus, MessageCircle, FileText, 
   ArrowLeft, Brain, ScrollText, Layers, Send, BookOpen, ChevronDown, Check, Menu, PenTool, X, Bookmark, Trash2
@@ -8,16 +8,34 @@ import { getClassroomByCode } from '../../api/classroom.api';
 import { getLearningMaterials } from '../../api/learningMaterials.api';
 import useAIStore from '../../store/ai.store';
 import TokenWidget from '../../components/common/TokenWidget';
+import InteractiveQuizGame from '../../components/classroom/InteractiveQuizGame';
+
+
+const renderMaterialContent = (type, content, id) => {
+  if (type === 'quiz') {
+    try {
+      const parsed = JSON.parse(content);
+      return <InteractiveQuizGame key={id} quizId={id} quizData={parsed} />;
+    } catch (e) {
+      // Fallback for legacy plain-text quizzes or AI format errors
+      return <pre className="text-[13px] md:text-[14px] leading-relaxed text-gray-800 dark:text-gray-200 whitespace-pre-wrap font-sans">{content}</pre>;
+    }
+  }
+  return <pre className="text-[13px] md:text-[14px] leading-relaxed text-gray-800 dark:text-gray-200 whitespace-pre-wrap font-sans">{content}</pre>;
+};
 
 const AiStudioPage = () => {
   const { code, materialId: initialMaterialId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { virtualTokens, isTokensExhausted, setVirtualTokens, setNextResetAt } = useAIStore();
   
   const [classroom, setClassroom] = useState(null);
   const [materials, setMaterials] = useState([]);
   const [activeMaterialId, setActiveMaterialId] = useState(initialMaterialId || null);
   const [showMaterialPicker, setShowMaterialPicker] = useState(false);
+  
+  const autoTriggerRef = useRef(false);
   
   const [showLeftSidebar, setShowLeftSidebar] = useState(false);
   const [showRightSidebar, setShowRightSidebar] = useState(false);
@@ -60,13 +78,39 @@ const AiStudioPage = () => {
       fetchHistory();
       setActiveThreadId(null);
       setActiveSavedId(null);
-      setStudioOutput(null);
-      setMessages([]);
+      
+      // Only clear studioOutput if we don't have pending URL triggers
+      const params = new URLSearchParams(location.search);
+      if (!params.get('autoGenerate') && !params.get('autoChat')) {
+        setStudioOutput(null);
+        setMessages([]);
+      }
     } else {
       setConversations([]);
       setSavedMaterials([]);
     }
   }, [activeMaterialId]);
+
+  // 3. Handle Auto Triggers
+  useEffect(() => {
+    if (activeMaterialId && location.search) {
+      const params = new URLSearchParams(location.search);
+      const autoGenerate = params.get('autoGenerate');
+      const autoChat = params.get('autoChat');
+
+      if (autoGenerate && !autoTriggerRef.current) {
+        autoTriggerRef.current = true;
+        setTimeout(() => handleGenerate(autoGenerate), 50);
+        navigate(`/dashboard/classroom/${code}/studio/${activeMaterialId}`, { replace: true });
+      } else if (autoChat && !autoTriggerRef.current) {
+        autoTriggerRef.current = true;
+        setTimeout(() => handleNewChat(), 50);
+        navigate(`/dashboard/classroom/${code}/studio/${activeMaterialId}`, { replace: true });
+      }
+    } else {
+      autoTriggerRef.current = false;
+    }
+  }, [activeMaterialId, location.search]);
 
   // 3. Fetch Messages when activeThreadId changes
   useEffect(() => {
@@ -146,6 +190,26 @@ const AiStudioPage = () => {
         body: JSON.stringify({ isSaved })
       });
       setConversations(prev => prev.map(c => c.id === id ? { ...c, isSaved } : c));
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleDeleteMaterial = async (id) => {
+    if (!window.confirm("Delete this saved material?")) return;
+    const token = localStorage.getItem('token');
+    try {
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+      await fetch(`${baseUrl}/studio/study-materials/${id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      setSavedMaterials(prev => prev.filter(m => m.id !== id));
+      if (activeSavedId === id) {
+         setActiveSavedId(null);
+         setStudioOutput(null);
+      }
     } catch (e) {
       console.error(e);
     }
@@ -239,7 +303,7 @@ const AiStudioPage = () => {
            setStudioOutput({ type, content: data.message, isLoading: false });
            return;
         }
-        throw new Error("Failed to generate");
+        throw new Error(data.message || data.error || "Failed to generate");
       }
 
       setStudioOutput({ type, content: data.content, isLoading: false });
@@ -258,7 +322,7 @@ const AiStudioPage = () => {
         window.dispatchEvent(new CustomEvent('aiTokensUpdate', { detail: data.remainingTokens }));
       }
     } catch (e) {
-      setStudioOutput({ type, content: "Error generating content.", isLoading: false });
+      setStudioOutput({ type, content: e.message || "Error generating content.", isLoading: false });
     } finally {
       setStudioLoading(false);
     }
@@ -285,7 +349,7 @@ const AiStudioPage = () => {
               <ArrowLeft size={18} />
             </button>
             <div className="flex-1 min-w-0">
-              <h2 className="font-bold text-gray-800 dark:text-gray-100 text-[15px] truncate">Likhâ AI Studio</h2>
+              <h2 className="font-bold text-gray-800 dark:text-gray-100 text-[15px] truncate">L I K H Â AI Studio</h2>
               <p className="text-[10px] text-gray-400 font-medium uppercase tracking-widest truncate">{classroom?.name || 'Loading...'}</p>
             </div>
           </div>
@@ -391,15 +455,26 @@ const AiStudioPage = () => {
                 ) : (
                   <div className="flex flex-col gap-1">
                     {savedMaterials.map(m => (
-                      <button
-                        key={m.id}
-                        onClick={() => { setActiveSavedId(m.id); setActiveThreadId(null); setStudioOutput(null); setShowLeftSidebar(false); }}
-                        className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl w-full text-left transition-colors border-none cursor-pointer
-                          ${activeSavedId === m.id ? 'bg-[#FFC700]/10 text-[#B88F00] dark:text-[#FFC700] font-semibold' : 'hover:bg-gray-50 dark:hover:bg-white/5 text-gray-600 dark:text-gray-400'}`}
-                      >
-                        <FileText size={14} />
-                        <span className="text-[12.5px] truncate flex-1 capitalize">{m.type}</span>
-                      </button>
+                      <div key={m.id} className="relative group w-full flex items-center">
+                        <button
+                          onClick={() => { setActiveSavedId(m.id); setActiveThreadId(null); setStudioOutput(null); setShowLeftSidebar(false); }}
+                          className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl w-full text-left transition-colors border-none cursor-pointer
+                            ${activeSavedId === m.id ? 'bg-[#FFC700]/10 text-[#B88F00] dark:text-[#FFC700] font-semibold' : 'hover:bg-gray-50 dark:hover:bg-white/5 text-gray-600 dark:text-gray-400'}`}
+                        >
+                          <FileText size={14} />
+                          <span className="text-[12.5px] truncate flex-1 capitalize pr-6">{m.type}</span>
+                        </button>
+                        
+                        <div className="absolute right-2 flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); handleDeleteMaterial(m.id); }} 
+                            title="Delete Material"
+                            className="p-1.5 hover:bg-red-100 dark:hover:bg-red-500/20 hover:text-red-500 rounded-lg text-gray-500 cursor-pointer border-none bg-transparent transition-colors"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      </div>
                     ))}
                   </div>
                 )}
@@ -424,7 +499,7 @@ const AiStudioPage = () => {
           </button>
           
           <div className="flex flex-col items-center justify-center min-w-0 px-2 flex-1">
-            <span className="font-bold text-[14px] text-gray-800 dark:text-white truncate w-full text-center">Likhâ AI Studio</span>
+            <span className="font-bold text-[14px] text-gray-800 dark:text-white truncate w-full text-center">L I K H Â AI Studio</span>
             {selectedMatObj && (
               <span className="text-[10px] text-gray-500 font-medium truncate flex items-center justify-center gap-1 w-full mt-0.5">
                 <BookOpen size={10} className="shrink-0" /> <span className="truncate">{selectedMatObj.title}</span>
@@ -492,7 +567,7 @@ const AiStudioPage = () => {
           </>
         ) : (activeSavedId || studioOutput) ? (
           <div className="flex-1 overflow-y-auto p-4 md:p-10">
-            <div className="max-w-4xl mx-auto bg-white dark:bg-[#1A211A] rounded-2xl shadow-sm border border-gray-100 dark:border-white/10 overflow-hidden">
+            <div className="w-full bg-white dark:bg-[#1A211A] rounded-2xl shadow-sm border border-gray-100 dark:border-white/10 overflow-hidden flex flex-col min-h-[500px]">
               <div className="px-5 py-4 border-b border-gray-100 dark:border-white/10 bg-gradient-to-r from-[#5D7C59] to-[#4A6447] flex items-center justify-between">
                 <div className="flex items-center gap-2 text-white">
                   <Sparkles size={18} className="text-[#FFC700]" />
@@ -501,16 +576,23 @@ const AiStudioPage = () => {
                   </span>
                 </div>
               </div>
-              <div className="p-5 md:p-8">
+              <div className="flex-1 flex flex-col h-full w-full">
                 {studioLoading ? (
-                  <div className="flex flex-col items-center py-20 text-gray-400 px-4 text-center">
+                  <div className="flex flex-col items-center justify-center py-20 text-gray-400 px-4 text-center h-full">
                     <Sparkles size={40} className="mb-4 animate-pulse text-[#FFC700]" />
                     <p>Generating your study material...</p>
                   </div>
                 ) : (
-                  <pre className="text-[13px] md:text-[14px] leading-relaxed text-gray-800 dark:text-gray-200 whitespace-pre-wrap font-sans">
-                    {activeSavedId ? savedMaterials.find(m => m.id === activeSavedId)?.content : studioOutput?.content}
-                  </pre>
+                  (() => {
+                    const id = activeSavedId || (studioOutput ? studioOutput.content.substring(0, 50) : 'none');
+                    const type = activeSavedId ? savedMaterials.find(m => m.id === activeSavedId)?.type : studioOutput?.type;
+                    const matContent = activeSavedId ? savedMaterials.find(m => m.id === activeSavedId)?.content : studioOutput?.content;
+                    
+                    if (type === 'quiz') {
+                      return <div className="h-full w-full flex-1 flex">{renderMaterialContent(type, matContent, id)}</div>;
+                    }
+                    return <div className="p-5 md:p-8">{renderMaterialContent(type, matContent, id)}</div>;
+                  })()
                 )}
               </div>
             </div>
@@ -520,7 +602,7 @@ const AiStudioPage = () => {
             <div className="w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-[#5D7C59] to-[#4A6447] rounded-3xl flex items-center justify-center shadow-2xl mb-6">
               <Sparkles size={32} className="text-[#FFC700]" />
             </div>
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white mb-3">Welcome to Likhâ AI Studio</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white mb-3">Welcome to L I K H Â AI Studio</h1>
             <p className="text-sm md:text-base text-gray-500 dark:text-gray-400 max-w-md leading-relaxed mb-8">
               Generate instant study materials, summaries, and quizzes, or start a personalized chat to ask questions about the current document.
             </p>
@@ -553,9 +635,8 @@ const AiStudioPage = () => {
         </div>
         <div className="flex flex-col gap-3">
           {[
-            { key: 'summary', label: 'Create Summary', icon: ScrollText },
-            { key: 'reviewer', label: 'Create Reviewer', icon: Brain },
-            { key: 'overview', label: 'Create Overview', icon: Layers },
+            { key: 'notes', label: 'Create Notes', icon: ScrollText },
+            { key: 'quiz', label: 'Create Quiz', icon: Brain },
           ].map(({ key, label, icon: Icon }) => (
             <button
               key={key}

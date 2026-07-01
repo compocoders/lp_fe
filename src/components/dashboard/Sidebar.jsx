@@ -114,40 +114,44 @@ const Sidebar = ({ onClose, onLogout, dashboardData }) => {
     </button>
   );
 
+  // Scrollbar utility classes
+  const scrollbarClasses = "[&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-gray-200 dark:[&::-webkit-scrollbar-thumb]:bg-[#2A342A] [&::-webkit-scrollbar-track]:transparent";
+
   return (
-    <div className="w-[260px] bg-white dark:bg-[#1A211A] h-[100dvh] flex flex-col border-r border-gray-100 dark:border-white/10 shadow-sm shrink-0 overflow-hidden relative transition-colors duration-200">
+    // h-full so it fills its parent wrapper (which is h-[100dvh] in Mainpage)
+    <div className="w-[260px] bg-white dark:bg-[#1A211A] h-full flex flex-col border-r border-gray-100 dark:border-white/10 shadow-sm shrink-0 overflow-hidden relative transition-colors duration-200">
       {/* Logo */}
-      <div className="flex items-center justify-between px-5 py-5 shrink-0 border-b border-gray-50 dark:border-white/5">
+      <div className="flex items-center justify-between px-5 py-4 shrink-0 border-b border-gray-50 dark:border-white/5">
         <div
           className="flex items-center gap-2.5 cursor-pointer"
           onClick={() => { navigate('/dashboard'); onClose && onClose(); }}
         >
           <img
             src="/image/logo.svg"
-            alt="Likhā Logo"
+            alt="L I K H Â Logo"
             className="w-8 h-8"
             onError={(e) => { e.target.style.display = 'none'; }}
           />
-          <span className="text-xl font-black text-[#4A6447] dark:text-[#7A9A7B] tracking-[0.18em]">LIKHÂ</span>
+          <span className="text-xl font-black text-[#4A6447] dark:text-[#7A9A7B] tracking-[0.18em]">L I K H Â</span>
         </div>
         {onClose && (
           <button
             onClick={onClose}
-            className="md:hidden p-1.5 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg transition-colors"
+            className="md:hidden flex items-center justify-center w-10 h-10 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 rounded-xl transition-colors"
           >
             <X size={18} />
           </button>
         )}
       </div>
 
-      {/* Nav content — scrollable */}
-      <div className="flex flex-col flex-1 overflow-y-auto py-4 px-3 gap-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+      {/* Nav content — flex-1 + min-h-0 is the key: allows this to shrink below its content size */}
+      <div className={`flex flex-col flex-1 min-h-0 overflow-y-auto py-3 px-3 gap-1 ${scrollbarClasses} [scrollbar-width:thin]`}>
 
         {/* Home */}
         <NavItem to="/dashboard" end icon={Home}>Home</NavItem>
 
         {/* Divider */}
-        <div className="my-2" />
+        <div className="my-1.5" />
 
         {/* Enrolled Classes */}
         <SectionHeader label="Enrolled" icon={BookOpen} groupKey="classes" />
@@ -160,7 +164,7 @@ const Sidebar = ({ onClose, onLogout, dashboardData }) => {
               transition={{ duration: 0.25 }}
               className="overflow-hidden"
             >
-              <div className="flex flex-col gap-0.5 mt-1 mb-2 max-h-[200px] overflow-y-auto [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-gray-200 dark:[&::-webkit-scrollbar-thumb]:bg-[#2A342A] [&::-webkit-scrollbar-track]:transparent pr-1">
+              <div className="flex flex-col gap-0.5 mt-1 mb-2 pr-1">
                 {enrolledClasses.length > 0 ? enrolledClasses.map(cls => {
                   const color = getClassColor(cls.name);
                   return (
@@ -194,7 +198,7 @@ const Sidebar = ({ onClose, onLogout, dashboardData }) => {
               transition={{ duration: 0.25 }}
               className="overflow-hidden"
             >
-              <div className="flex flex-col gap-0.5 mt-1 mb-2 max-h-[200px] overflow-y-auto [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-gray-200 dark:[&::-webkit-scrollbar-thumb]:bg-[#2A342A] [&::-webkit-scrollbar-track]:transparent pr-1">
+              <div className="flex flex-col gap-0.5 mt-1 mb-2 pr-1">
                 {teachingClasses.length > 0 ? teachingClasses.map(cls => {
                   const color = getClassColor(cls.name);
                   return (
@@ -228,7 +232,7 @@ const Sidebar = ({ onClose, onLogout, dashboardData }) => {
               transition={{ duration: 0.25 }}
               className="overflow-hidden"
             >
-              <div className="flex flex-col gap-1 mt-1 mb-2 px-4 max-h-[280px] overflow-y-auto [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-gray-200 dark:[&::-webkit-scrollbar-thumb]:bg-[#2A342A] [&::-webkit-scrollbar-track]:transparent pr-1">
+              <div className="flex flex-col gap-1 mt-1 mb-2 px-4 pr-1">
                 {todoItems.length > 0 ? todoItems.map((todo, i) => (
                   <div 
                     key={i} 
@@ -253,7 +257,7 @@ const Sidebar = ({ onClose, onLogout, dashboardData }) => {
         </AnimatePresence>
       </div>
 
-      {/* AI Controls */}
+      {/* AI Controls — always visible at bottom */}
       <div className="px-3 py-3 border-t border-gray-100 dark:border-white/10 shrink-0 bg-gradient-to-tr from-[#5D7C59]/5 to-transparent">
         <div className="flex flex-col gap-2">
           <span className="text-xs font-bold text-gray-500 uppercase tracking-wider px-1">AI Assistant</span>
@@ -261,8 +265,8 @@ const Sidebar = ({ onClose, onLogout, dashboardData }) => {
         </div>
       </div>
 
-      {/* Footer */}
-      <div className="px-3 py-4 border-t border-gray-100 dark:border-white/10 shrink-0 flex flex-col gap-1 bg-white dark:bg-[#1A211A] transition-colors duration-200">
+      {/* Footer — Settings & Logout, always visible */}
+      <div className="px-3 py-3 border-t border-gray-100 dark:border-white/10 shrink-0 flex flex-col gap-0.5 bg-white dark:bg-[#1A211A] transition-colors duration-200">
         <NavItem to="/dashboard/settings" icon={Settings}>Settings</NavItem>
         {onLogout && (
           <button

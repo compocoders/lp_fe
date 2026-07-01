@@ -89,3 +89,12 @@ export const leaveClassroom = async (id) => {
         throw error;
     }
 };
+export const removeMember = async (classroomId, userId) => {
+    try {
+        const response = await api.delete(`/classrooms/${classroomId}/members/${userId}`);
+        return response.data;
+    } catch (error) {
+        console.error('Error removing member:', error);
+        throw error;
+    }
+};

@@ -64,25 +64,25 @@ const ClassroomIdeaSpark = ({ classroomId }) => {
             </div>
             <h2 className="text-2xl font-black text-white mb-2">Classroom Idea Spark</h2>
             <p className="text-white/80 font-medium max-w-md mx-auto text-sm">
-              Stuck on what to teach next? Enter a topic and Likhâ AI will brainstorm creative lesson plans, project ideas, and discussion prompts.
+              Stuck on what to teach next? Enter a topic and L I K H Â AI will brainstorm creative lesson plans, project ideas, and discussion prompts.
             </p>
           </div>
         </div>
 
         <div className="bg-white dark:bg-[#1A211A] rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-white/10 flex flex-col gap-3">
           <label className="text-[11px] font-bold text-gray-500 uppercase tracking-widest">Topic or Subject Area</label>
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-3">
             <input 
               type="text" 
               value={topic}
               onChange={e => setTopic(e.target.value)}
               placeholder="e.g. The Solar System, Python Basics, History of Art..."
-              className="flex-1 bg-[#FAFCFA] dark:bg-[#232B23] border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm font-medium focus:border-[#5D7C59] outline-none"
+              className="flex-1 bg-[#FAFCFA] dark:bg-[#232B23] border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-[#5D7C59] outline-none min-w-0"
             />
             <button 
               onClick={handleGenerateIdeas}
               disabled={isGenerating || !topic.trim() || isTokensExhausted()}
-              className="px-6 rounded-xl bg-[#5D7C59] text-white font-bold flex items-center justify-center gap-2 shadow-md hover:bg-[#4A6447] transition-all disabled:opacity-50 disabled:cursor-not-allowed border-none cursor-pointer"
+              className="w-full sm:w-auto px-6 py-3 rounded-xl bg-[#5D7C59] text-white font-bold flex items-center justify-center gap-2 shadow-md hover:bg-[#4A6447] transition-all disabled:opacity-50 disabled:cursor-not-allowed border-none cursor-pointer shrink-0"
             >
               {isGenerating ? <Loader2 size={18} className="animate-spin" /> : <><Sparkles size={16} /> Spark Ideas</>}
             </button>

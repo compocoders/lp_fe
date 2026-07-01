@@ -67,7 +67,7 @@ export default function RegisterPage() {
     <div className="flex min-h-screen bg-white font-sans overflow-hidden">
       
       {/* Left Column: Form */}
-      <div className="w-full lg:w-1/2 flex flex-col px-8 sm:px-16 md:px-24 py-10 relative">
+      <div className="w-full lg:w-1/2 flex flex-col px-5 sm:px-10 md:px-16 lg:px-12 xl:px-20 py-8 sm:py-10 relative">
         
         {/* Branding */}
         <motion.div 
@@ -75,10 +75,10 @@ export default function RegisterPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
           onClick={() => navigate('/')} 
-          className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity self-start"
+          className="flex items-center gap-2 sm:gap-3 cursor-pointer hover:opacity-80 transition-opacity self-start"
         >
-          <img src="/image/logo.svg" alt="Likhā Logo" className="w-10 h-10 md:w-12 md:h-12 drop-shadow-sm" />
-          <span className="text-xl md:text-2xl font-black text-[#698864] tracking-[0.25em]">L I K H Â</span>
+          <img src="/image/logo.svg" alt="Likhā Logo" className="w-9 h-9 md:w-12 md:h-12 drop-shadow-sm" />
+          <span className="text-lg md:text-2xl font-black text-[#698864] tracking-[0.25em]">L I K H Â</span>
         </motion.div>
 
         {/* Form Container */}
@@ -86,7 +86,7 @@ export default function RegisterPage() {
           variants={staggerContainer}
           initial="hidden"
           animate="visible"
-          className="flex-1 flex flex-col justify-center max-w-sm mx-auto w-full mt-10 lg:mt-0"
+          className="flex-1 flex flex-col justify-center max-w-sm w-full mx-auto mt-8 sm:mt-10 lg:mt-0"
         >
           <motion.div variants={fadeUpVariant} className="text-center mb-10">
             <h1 className="text-4xl md:text-[2.75rem] font-extrabold text-[#52704E] mb-4 tracking-tight">Welcome</h1>

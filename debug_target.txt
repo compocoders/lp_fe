@@ -1,0 +1,11 @@
+{savedMaterials.map(m => (
+                      <button
+                        key={m.id}
+                        onClick={() => { setActiveSavedId(m.id); setActiveThreadId(null); setStudioOutput(null); setShowLeftSidebar(false); }}
+                        className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl w-full text-left transition-colors border-none cursor-pointer
+                          ${activeSavedId === m.id ? 'bg-[#FFC700]/10 text-[#B88F00] dark:text-[#FFC700] font-semibold' : 'hover:bg-gray-50 dark:hover:bg-white/5 text-gray-600 dark:text-gray-400'}`}
+                      >
+                        <FileText size={14} />
+                        <span className="text-[12.5px] truncate flex-1 capitalize">{m.type}</span>
+                      </button>
+                    ))}

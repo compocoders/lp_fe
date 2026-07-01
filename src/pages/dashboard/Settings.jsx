@@ -10,12 +10,12 @@ const Settings = () => {
   const [activeTab, setActiveTab] = useState('appearance');
 
   return (
-    <div className="flex-1 flex flex-col h-full overflow-y-auto bg-[#FAFCFA] dark:bg-[#121612] font-sans p-5 md:p-8 transition-colors duration-200">
-      <div className="max-w-4xl mx-auto w-full flex flex-col gap-8">
+    <div className="flex-1 flex flex-col h-full overflow-y-auto bg-[#FAFCFA] dark:bg-[#121612] font-sans p-4 sm:p-5 md:p-8 transition-colors duration-200">
+      <div className="max-w-4xl mx-auto w-full flex flex-col gap-5 md:gap-8">
         
         {/* Header */}
         <div>
-          <h1 className="text-2xl font-bold text-[#4A6447] dark:text-[#7A9A7B] tracking-tight flex items-center gap-3">
+          <h1 className="text-xl md:text-2xl font-bold text-[#4A6447] dark:text-[#7A9A7B] tracking-tight flex items-center gap-2 sm:gap-3">
             <SettingsIcon size={24} />
             Settings
           </h1>
@@ -25,10 +25,10 @@ const Settings = () => {
         </div>
 
         {/* Content */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-5 md:gap-8">
           
-          {/* Settings Nav (Desktop) */}
-          <div className="md:col-span-3 flex md:flex-col gap-2 overflow-x-auto md:overflow-visible sticky top-0 pb-2 md:pb-0 z-10 bg-[#FAFCFA] dark:bg-[#121612]">
+          {/* Settings Nav */}
+          <div className="md:col-span-3 flex md:flex-col gap-2 overflow-x-auto md:overflow-visible static md:sticky md:top-0 pb-2 md:pb-0 z-10 bg-[#FAFCFA] dark:bg-[#121612]">
             {[
               { id: 'appearance', label: 'Appearance', icon: Monitor },
               { id: 'profile', label: 'Profile', icon: User },
@@ -61,7 +61,7 @@ const Settings = () => {
                   </div>
                   <div>
                     <h2 className="text-lg font-bold text-gray-900 dark:text-white">Appearance</h2>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Customize how Likhâ looks on your device.</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Customize how L I K H Â looks on your device.</p>
                   </div>
                 </div>
                 
@@ -259,15 +259,11 @@ const ProfileSettings = () => {
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Status</label>
-          <input
-            type="text"
-            name="status"
-            value={profileData.status}
-            onChange={handleChange}
-            placeholder="e.g. Feeling productive!"
-            className="px-4 py-2.5 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-[#5D7C59]/30 focus:border-[#5D7C59] outline-none text-gray-900 dark:text-white transition-all text-sm"
-          />
+          <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Account Status</label>
+          <div className="px-4 py-3 bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl flex items-center gap-2 text-gray-600 dark:text-gray-400 text-sm font-medium cursor-not-allowed">
+            <div className={`w-2.5 h-2.5 rounded-full ${profileData.status === 'suspended' ? 'bg-red-500' : 'bg-green-500'}`} />
+            {profileData.status && profileData.status !== 'feeling productive!' ? profileData.status.charAt(0).toUpperCase() + profileData.status.slice(1) : 'Active'}
+          </div>
         </div>
 
         {errorMsg && (

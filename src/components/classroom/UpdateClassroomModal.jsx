@@ -62,7 +62,7 @@ const UpdateClassroomModal = ({ isOpen, onClose, classroom, onSuccess }) => {
             <select
               value={updateData.private ? 'private' : 'public'}
               onChange={e => setUpdateData({ ...updateData, private: e.target.value === 'private' })}
-              className="w-full px-4 py-3 bg-[#FAFCFA] dark:bg-[#232B23] border-2 border-gray-200 dark:border-white/10 rounded-xl text-gray-805 dark:text-gray-200 text-sm font-medium outline-none focus:border-[#5D7C59] dark:focus:border-[#7A9A7B] transition-all cursor-pointer"
+              className="w-full px-4 py-3 bg-[#FAFCFA] dark:bg-[#232B23] border-2 border-gray-200 dark:border-white/10 rounded-xl text-gray-900 dark:text-gray-200 text-sm font-medium outline-none focus:border-[#5D7C59] dark:focus:border-[#7A9A7B] transition-all cursor-pointer"
             >
               <option value="public">Public — Anyone can join</option>
               <option value="private">Private — Invite only</option>

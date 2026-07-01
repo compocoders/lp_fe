@@ -74,15 +74,15 @@ const DashboardHome = () => {
       className="flex-1 h-full"
     >
       <div className="h-full overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-200 [&::-webkit-scrollbar-thumb]:rounded-full">
-        <div className="max-w-6xl mx-auto px-5 md:px-8 py-6 md:py-8">
+        <div className="max-w-6xl mx-auto px-4 sm:px-5 md:px-8 py-5 sm:py-6 md:py-8">
 
           {/* ── Header Banner ── */}
-          <div className="relative overflow-hidden bg-gradient-to-br from-[#5D7C59] to-[#4A6447] rounded-2xl md:rounded-[1.75rem] p-6 md:p-8 mb-8 shadow-lg">
+          <div className="relative overflow-hidden bg-gradient-to-br from-[#5D7C59] to-[#4A6447] rounded-2xl md:rounded-[1.75rem] p-5 sm:p-6 md:p-8 mb-6 sm:mb-8 shadow-lg">
             {/* Blob decorations */}
             <div className="absolute -top-10 -right-10 w-48 h-48 rounded-full bg-[#7A9A7B]/40 blur-2xl pointer-events-none" />
             <div className="absolute -bottom-8 right-1/3 w-32 h-32 rounded-full bg-[#FFC700]/10 blur-xl pointer-events-none" />
 
-            <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-5">
+            <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-5">
               <div>
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-white/80 text-xs font-semibold tracking-wide mb-3">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#FFC700] animate-pulse" />
@@ -138,7 +138,7 @@ const DashboardHome = () => {
           </div>
 
           {/* ── Stats Row ── */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8">
             {[
               { icon: BookOpen, label: 'Enrolled', count: enrolledCount, color: 'text-[#5D7C59]', bg: 'bg-[#5D7C59]/8' },
               { icon: Users, label: 'Teaching', count: teachingCount, color: 'text-[#4A6447]', bg: 'bg-[#4A6447]/8' },
@@ -157,7 +157,7 @@ const DashboardHome = () => {
           </div>
 
           {/* ── Search & Section Title ── */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-5 sm:mb-6">
             <h2 className="text-lg font-bold text-gray-800 dark:text-white transition-colors duration-200">Your Classrooms</h2>
             <div className="relative">
               <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
@@ -175,7 +175,7 @@ const DashboardHome = () => {
           {!dashboardData ? (
             <Loading text="Loading Classes..." />
           ) : filtered.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
               {filtered.map((cls) => (
                 <ClassCard
                   key={cls.id}
@@ -242,7 +242,7 @@ const DashboardHome = () => {
       {/* Leave Classroom Confirm Dialog */}
       {confirmLeave && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(6px)' }}>
-          <div className="bg-white dark:bg-[#1A211A] rounded-2xl shadow-2xl border border-gray-100 dark:border-white/10 p-6 max-w-sm w-full flex flex-col gap-4" style={{ animation: 'fadeIn 0.2s ease-out' }}>
+          <div className="bg-white dark:bg-[#1A211A] rounded-2xl shadow-2xl border border-gray-100 dark:border-white/10 p-5 sm:p-6 max-w-sm w-full flex flex-col gap-4 max-h-[90dvh] overflow-y-auto" style={{ animation: 'fadeIn 0.2s ease-out' }}>
             <div className="w-14 h-14 rounded-2xl bg-amber-50 dark:bg-amber-500/15 flex items-center justify-center mx-auto">
               <LogOut size={26} className="text-amber-500" />
             </div>

@@ -63,9 +63,9 @@ const Mainpage = () => {
         />
       )}
 
-      {/* Sidebar — fixed on mobile, static on md+ */}
+      {/* Sidebar — fixed on mobile (full height overlay), static on md+ */}
       <div
-        className={`fixed md:static inset-y-0 left-0 z-50 transform ${
+        className={`fixed md:static inset-y-0 left-0 z-50 h-[100dvh] md:h-auto transform ${
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
         } md:translate-x-0 transition-transform duration-300 ease-in-out`}
       >
@@ -81,8 +81,8 @@ const Mainpage = () => {
         {/* Mobile Header */}
         <div className="md:hidden flex items-center justify-between px-5 py-4 bg-white dark:bg-[#1A211A] border-b border-gray-100 dark:border-white/10 shadow-sm shrink-0 transition-colors duration-200">
           <div className="flex items-center gap-2.5">
-            <img src="/image/logo.svg" alt="Likhā Logo" className="w-7 h-7" onError={(e) => { e.target.style.display = 'none'; }} />
-            <span className="text-xl font-black text-[#4A6447] dark:text-[#7A9A7B] tracking-[0.2em]">LIKHÂ</span>
+            <img src="/image/logo.svg" alt="L I K H Â Logo" className="w-7 h-7" onError={(e) => { e.target.style.display = 'none'; }} />
+            <span className="text-xl font-black text-[#4A6447] dark:text-[#7A9A7B] tracking-[0.2em]">L I K H Â</span>
           </div>
           <button
             onClick={() => setIsSidebarOpen(true)}

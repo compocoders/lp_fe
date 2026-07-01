@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import useAIStore from '../../store/ai.store';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
   X, Download, FileText, Image, Presentation, FileSpreadsheet,
   File, ExternalLink, Loader2, AlertCircle, ZoomIn, ZoomOut,
-  RefreshCw,
+  RefreshCw, Brain, ScrollText, Sparkles,
 } from 'lucide-react';
 
 /* ─── helpers ─── */
@@ -185,20 +185,12 @@ const UnsupportedPreview = ({ url, ext }) => (
 
 /* ════════ Main Modal ════════ */
 const MaterialPreviewModal = ({ isOpen, onClose, material }) => {
-  const [key, setKey] = useState(0); // force iframe reload
-  const { isTokensExhausted, setVirtualTokens, setNextResetAt } = useAIStore();
+  const [key, setKey] = useState(0);
+  const { code } = useParams();
+  const navigate = useNavigate();
+  
 
-  // AI Chat State
-  const [isAIChatOpen, setIsAIChatOpen] = useState(false);
-  const [chatMessages, setChatMessages] = useState([{ role: 'ai', text: 'Hello! I can answer questions about this document. What would you like to know?' }]);
-  const [chatInput, setChatInput] = useState('');
-  const [isChatLoading, setIsChatLoading] = useState(false);
-
-  // Study Material State
-  const [isGeneratingStudy, setIsGeneratingStudy] = useState(false);
-  const [showStudyModal, setShowStudyModal] = useState(false);
-  const [studyContent, setStudyContent] = useState('');
-  const [studyType, setStudyType] = useState('');
+  
 
   useEffect(() => {
     if (isOpen) {
@@ -232,94 +224,6 @@ const MaterialPreviewModal = ({ isOpen, onClose, material }) => {
       case 'doc':
       case 'sheet': return <OfficePreview key={key} url={fileUrl} title={title} type={fileType} />;
       default:      return <UnsupportedPreview key={key} url={fileUrl} ext={ext} />;
-    }
-  };
-
-  const handleGenerateStudyMaterial = async (type) => {
-    setIsGeneratingStudy(true);
-    setStudyType(type);
-    setShowStudyModal(true);
-    setStudyContent('');
-
-    try {
-      const token = localStorage.getItem('token');
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
-      const res = await fetch(`${baseUrl}/ai/generate-study-material`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ materialId: material.id, type })
-      });
-      
-      const data = await res.json();
-      if (!res.ok) {
-        if (res.status === 429) {
-           setVirtualTokens(0);
-           if (data.nextResetAt) setNextResetAt(data.nextResetAt);
-           toast.error(data.message || 'Daily AI token limit reached.');
-           return;
-        }
-        throw new Error(data.error || 'Failed to generate');
-      }
-      
-      setStudyContent(data.content);
-      window.dispatchEvent(new CustomEvent('aiTokensUpdate', { detail: data.remainingTokens }));
-    } catch (err) {
-      setStudyContent(`**Error:** ${err.message}`);
-    } finally {
-      setIsGeneratingStudy(false);
-    }
-  };
-
-  const handleSendMessage = async () => {
-    if (!chatInput.trim() || isTokensExhausted()) return;
-    const userMsg = chatInput;
-    setChatInput('');
-    setChatMessages(prev => [...prev, { role: 'user', text: userMsg }]);
-    setIsChatLoading(true);
-
-    try {
-      const token = localStorage.getItem('token');
-      // Dispatch an event to get the model or just use flash
-      const aiModel = 'flash'; 
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
-      
-      const res = await fetch(`${baseUrl}/ai/chat-document`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          message: userMsg,
-          materialId: material.id,
-          modelType: aiModel
-        })
-      });
-      
-      const data = await res.json();
-      if (!res.ok) {
-        if (res.status === 429) {
-           setVirtualTokens(0);
-           if (data.nextResetAt) setNextResetAt(data.nextResetAt);
-           toast.error(data.message || 'Daily AI token limit reached.');
-           return;
-        }
-        throw new Error(data.error || data.message || 'Failed to get answer');
-      }
-      
-      setChatMessages(prev => [...prev, { role: 'ai', text: data.reply }]);
-      // Update tokens globally
-      window.dispatchEvent(new CustomEvent('aiTokensUpdate', { detail: data.remainingTokens }));
-
-    } catch (err) {
-      setChatMessages(prev => [...prev, { role: 'ai', text: `Error: ${err.message}` }]);
-    } finally {
-      setIsChatLoading(false);
     }
   };
 
@@ -374,32 +278,26 @@ const MaterialPreviewModal = ({ isOpen, onClose, material }) => {
           <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto scrollbar-hide pb-1 sm:pb-0 shrink-0">
             {/* Generate Notes */}
             <button
-              onClick={() => handleGenerateStudyMaterial('notes')}
-              disabled={isGeneratingStudy || isTokensExhausted()}
+              onClick={() => { onClose(); navigate(`/dashboard/classroom/${code}/studio/${material.id}?autoGenerate=notes`); }}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-blue-200 dark:border-blue-900/30 bg-blue-50 dark:bg-blue-900/10 hover:bg-blue-100 dark:hover:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-[12px] font-bold transition-all cursor-pointer disabled:opacity-50"
             >
-              📝 Notes
+              <ScrollText size={14} /> Notes
             </button>
             
             {/* Generate Quiz */}
             <button
-              onClick={() => handleGenerateStudyMaterial('quiz')}
-              disabled={isGeneratingStudy || isTokensExhausted()}
+              onClick={() => { onClose(); navigate(`/dashboard/classroom/${code}/studio/${material.id}?autoGenerate=quiz`); }}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-purple-200 dark:border-purple-900/30 bg-purple-50 dark:bg-purple-900/10 hover:bg-purple-100 dark:hover:bg-purple-900/20 text-purple-600 dark:text-purple-400 text-[12px] font-bold transition-all cursor-pointer disabled:opacity-50"
             >
-              🧠 Quiz
+              <Brain size={14} /> Quiz
             </button>
 
             {/* Toggle AI */}
             <button
-              onClick={() => setIsAIChatOpen(!isAIChatOpen)}
-              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-xl border text-[12px] font-bold transition-all cursor-pointer ${
-                isAIChatOpen 
-                  ? 'bg-gradient-to-r from-[#5D7C59] to-[#4A6447] text-white border-transparent shadow-md' 
-                  : 'bg-white dark:bg-[#1A211A] text-[#5D7C59] dark:text-[#7A9A7B] border-[#5D7C59]/30 hover:bg-[#5D7C59]/10'
-              }`}
+              onClick={() => { onClose(); navigate(`/dashboard/classroom/${code}/studio/${material.id}?autoChat=true`); }}
+              className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl border border-[#5D7C59]/30 text-[12px] font-bold transition-all cursor-pointer bg-white dark:bg-[#1A211A] text-[#5D7C59] dark:text-[#7A9A7B] hover:bg-[#5D7C59]/10"
             >
-              ✨ Chat
+              <Sparkles size={14} /> Chat
             </button>
             
             {/* Reload */}
@@ -445,98 +343,8 @@ const MaterialPreviewModal = ({ isOpen, onClose, material }) => {
           <div className="flex-1 relative bg-[#FAFCFA] dark:bg-[#0D110D] transition-all duration-300">
             {renderPreview()}
           </div>
-
-          {/* AI Chat Sidebar */}
-          {isAIChatOpen && (
-            <div className="w-[350px] shrink-0 border-l border-gray-200 dark:border-white/10 bg-white dark:bg-[#1A211A] flex flex-col shadow-[-4px_0_15px_-3px_rgba(0,0,0,0.05)] transition-all duration-300 z-0">
-              <div className="p-3 border-b border-gray-100 dark:border-white/5 bg-gradient-to-br from-[#5D7C59]/10 to-transparent">
-                <h3 className="text-sm font-black text-[#4A6447] dark:text-[#7A9A7B] flex items-center gap-2">
-                  <span>✨</span> Ask Document
-                </h3>
-                <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1">Ask questions and I'll find answers in this material.</p>
-              </div>
-              
-              <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
-                {chatMessages.map((msg, idx) => (
-                  <div key={idx} className={`flex flex-col max-w-[90%] ${msg.role === 'user' ? 'self-end items-end' : 'self-start items-start'}`}>
-                    <div className={`px-3 py-2 rounded-2xl text-[13px] ${
-                      msg.role === 'user' 
-                        ? 'bg-[#5D7C59] text-white rounded-br-sm' 
-                        : 'bg-gray-100 dark:bg-white/10 text-gray-800 dark:text-gray-200 rounded-bl-sm'
-                    }`}>
-                      {msg.text}
-                    </div>
-                  </div>
-                ))}
-                {isChatLoading && (
-                  <div className="self-start px-4 py-2 bg-gray-100 dark:bg-white/10 rounded-2xl rounded-bl-sm flex gap-1">
-                    <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"></span>
-                    <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce delay-75"></span>
-                    <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce delay-150"></span>
-                  </div>
-                )}
-              </div>
-
-              <div className="p-3 border-t border-gray-100 dark:border-white/5">
-                <div className="flex gap-2">
-                  <input 
-                    type="text" 
-                    value={chatInput}
-                    onChange={(e) => setChatInput(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                    placeholder={isTokensExhausted() ? "Out of tokens for today" : "Ask a question..."}
-                    disabled={isChatLoading || isTokensExhausted()}
-                    className="flex-1 bg-gray-50 dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-xl px-3 text-sm focus:outline-none focus:border-[#5D7C59] text-gray-800 dark:text-gray-200 disabled:opacity-50"
-                  />
-                  <button 
-                    onClick={handleSendMessage}
-                    disabled={isChatLoading || !chatInput.trim() || isTokensExhausted()}
-                    className="shrink-0 w-10 h-10 rounded-xl bg-[#5D7C59] text-white flex items-center justify-center disabled:opacity-50"
-                  >
-                    ➤
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </div>
-
-      {/* Study Material Modal */}
-      {showStudyModal && (
-        <div className="fixed inset-0 bg-black/60 z-[10000] flex items-center justify-center backdrop-blur-sm px-4">
-          <div className="bg-white dark:bg-[#1A211A] rounded-2xl w-full max-w-2xl max-h-[80vh] shadow-2xl relative border border-gray-100 dark:border-white/10 flex flex-col" style={{ animation: 'slideUpIn 0.2s ease-out' }}>
-            <div className="px-6 py-4 border-b border-gray-100 dark:border-white/10 flex justify-between items-center shrink-0">
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                <span className={studyType === 'quiz' ? 'text-purple-500' : 'text-blue-500'}>
-                  {studyType === 'quiz' ? '🧠 AI Quiz Generator' : '📝 AI Study Notes'}
-                </span>
-              </h3>
-              <button 
-                onClick={() => setShowStudyModal(false)}
-                className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-              >
-                <X size={18} />
-              </button>
-            </div>
-            
-            <div className="p-6 overflow-y-auto flex-1 prose dark:prose-invert max-w-none prose-sm sm:prose-base">
-              {isGeneratingStudy ? (
-                <div className="flex flex-col items-center justify-center h-48 gap-4">
-                  <Loader2 size={32} className="animate-spin text-[#5D7C59]" />
-                  <p className="text-gray-500 dark:text-gray-400 font-medium">
-                    Reading document and generating {studyType}...
-                  </p>
-                </div>
-              ) : (
-                <div className="whitespace-pre-wrap font-sans text-gray-800 dark:text-gray-200">
-                  {studyContent}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Keyframe definitions */}
       <style>{`

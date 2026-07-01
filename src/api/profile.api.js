@@ -15,7 +15,7 @@ export const createProfile = async (profileData) => {
 export const updateProfile = async (profileData) => {
   const isFormData = profileData instanceof FormData;
   const config = isFormData ? { headers: { 'Content-Type': undefined } } : {};
-  const response = await api.put('/profile', profileData, config);
+  const response = await api.put('/profile/me', profileData, config);
   return response.data;
 };
 export const profilepage = async () => {

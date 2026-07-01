@@ -36,8 +36,6 @@ api.interceptors.response.use(
       // 400s (bad requests) and 404s are usually handled by the local forms.
       if (status === 401) {
         useErrorStore.getState().setError('unauthorized', 'Your session has expired or you are not authorized. Please log in again.');
-      } else if (status === 403) {
-        useErrorStore.getState().setError('unauthorized', 'You do not have permission to access this resource.');
       } else if (status === 429) {
         useErrorStore.getState().setError('ratelimit', 'You are making requests too quickly. Please slow down and wait a moment.');
       } else if (status >= 500) {

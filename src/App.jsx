@@ -16,8 +16,17 @@ import ActivityGradebook from './pages/dashboard/ActivityGradebook';
 import JoinClassroomPage from './pages/dashboard/JoinClassroomPage';
 import Settings from './pages/dashboard/Settings';
 import ProtectedRoute from './components/common/ProtectedRoute';
+import ScrollToTop from './components/common/ScrollToTop';
 import GlobalErrorPage from './pages/error/GlobalErrorPage';
 import useErrorStore from './store/error.store';
+
+import FeaturesPage from './pages/public/FeaturesPage';
+import SecurityPage from './pages/public/SecurityPage';
+import AboutUsPage from './pages/public/AboutUsPage';
+import CareersPage from './pages/public/CareersPage';
+import ContactPage from './pages/public/ContactPage';
+import PrivacyPolicyPage from './pages/public/PrivacyPolicyPage';
+import TermsOfServicePage from './pages/public/TermsOfServicePage';
 
 function App() {
   const hasError = useErrorStore(state => state.hasError);
@@ -26,12 +35,21 @@ function App() {
     <>
       {hasError && <GlobalErrorPage />}
       <Router>
-      <Routes>
+        <ScrollToTop />
+        <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path='/login' element={<LoginPage />} />
         <Route path='/register' element={<RegisterPage />} />
         <Route path='/forgot-password' element={<ForgotPasswordPage />} />
         <Route path='/reset-password' element={<ResetPasswordPage />} />
+        
+        <Route path='/features' element={<FeaturesPage />} />
+        <Route path='/security' element={<SecurityPage />} />
+        <Route path='/about-us' element={<AboutUsPage />} />
+        <Route path='/careers' element={<CareersPage />} />
+        <Route path='/contact' element={<ContactPage />} />
+        <Route path='/privacy-policy' element={<PrivacyPolicyPage />} />
+        <Route path='/terms-of-service' element={<TermsOfServicePage />} />
         
         <Route element={<ProtectedRoute />}>
           <Route path='/verify-email' element={<VerifyEmailPage />} />
