@@ -33,25 +33,54 @@ const ProtectedRoute = () => {
     checkAuth();
   }, [location.pathname]);
 
-  // While we're confirming the session with the server, show a minimal spinner
+  // Cycle through some nice loading messages so it feels less boring
+  const [loadingTextIndex, setLoadingTextIndex] = useState(0);
+  const loadingMessages = [
+    "Authenticating session...",
+    "Securing connection...",
+    "Loading your workspace..."
+  ];
+
+  useEffect(() => {
+    if (!isChecking) return;
+    const interval = setInterval(() => {
+      setLoadingTextIndex(prev => (prev + 1) % loadingMessages.length);
+    }, 1500); // Change text every 1.5 seconds
+    return () => clearInterval(interval);
+  }, [isChecking]);
+
+  // While we're confirming the session with the server, show a nice spinner with text
   if (isChecking) {
     return (
       <div style={{
         display: 'flex',
+        flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
         minHeight: '100vh',
         background: '#F4F5F4',
+        gap: '16px'
       }}>
         <div style={{
-          width: 40,
-          height: 40,
+          width: 48,
+          height: 48,
           border: '4px solid #e0e0e0',
           borderTop: '4px solid #698864',
           borderRadius: '50%',
           animation: 'spin 0.8s linear infinite',
         }} />
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        <p style={{
+          color: '#52704E',
+          fontWeight: 600,
+          fontSize: '14px',
+          animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+        }}>
+          {loadingMessages[loadingTextIndex]}
+        </p>
+        <style>{`
+          @keyframes spin { to { transform: rotate(360deg); } }
+          @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+        `}</style>
       </div>
     );
   }
