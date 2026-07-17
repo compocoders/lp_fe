@@ -32,9 +32,13 @@ api.interceptors.response.use(
     } else if (error.response) {
       const status = error.response.status;
       
+      // Allow individual requests to opt out of global error handling
+      // by passing { skipGlobalErrorHandler: true } in their axios config.
+      const skip = error.config?.skipGlobalErrorHandler;
+
       // We only catch 401/403/429/500 globally. 
       // 400s (bad requests) and 404s are usually handled by the local forms.
-      if (status === 401) {
+      if (status === 401 && !skip) {
         useErrorStore.getState().setError('unauthorized', 'Your session has expired or you are not authorized. Please log in again.');
       } else if (status === 429) {
         useErrorStore.getState().setError('ratelimit', 'You are making requests too quickly. Please slow down and wait a moment.');

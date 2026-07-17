@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { verifyEmail, resendVerification, logout } from '../../api/auth.api';
+import { verifyEmail, resendVerification, logout, getMe } from '../../api/auth.api';
 import { motion } from 'framer-motion';
 import { Loader2, Mail, ArrowLeft, LogOut } from 'lucide-react';
 import useAuthStore from '../../store/auth.store';
@@ -88,9 +88,20 @@ export default function VerifyEmailPage() {
         localStorage.setItem('user', JSON.stringify(user));
       }
 
+      // Check if this user already has a profile
+      let hasProfile = false;
+      try {
+        const meData = await getMe();
+        hasProfile = meData.user?.hasProfile ?? false;
+        // Keep localStorage in sync with latest server state
+        localStorage.setItem('user', JSON.stringify(meData.user));
+      } catch {
+        // If getMe fails just fall through to profile creation to be safe
+      }
+
       setSuccess("Email verified successfully! Redirecting...");
       setTimeout(() => {
-        navigate('/dashboard');
+        navigate(hasProfile ? '/dashboard' : '/createProfile');
       }, 1500);
     } catch (err) {
       setError(err.response?.data?.message || 'Invalid verification code. Please try again.');

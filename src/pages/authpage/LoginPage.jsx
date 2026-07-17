@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, } from 'react-router-dom';
-import { login } from '../../api/auth.api';
+import { login, getMe } from '../../api/auth.api';
 import { motion } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
 import useAuthStore from '../../store/auth.store';
@@ -46,12 +46,24 @@ export default function LoginPage() {
     try {
       const response = await login({ email, password });
       
-      // Store token in cookies and user in native localStorage
-      localStorage.setItem('user', JSON.stringify(response.user));
+      // Fetch full user state (includes hasProfile) before deciding where to redirect
       if (response.token) {
         setAuth(response.user, response.token);
       }
-      navigate('/dashboard');
+
+      let destination = '/dashboard';
+      try {
+        const meData = await getMe();
+        localStorage.setItem('user', JSON.stringify(meData.user));
+        if (meData.user?.isEmailVerified && !meData.user?.hasProfile) {
+          destination = '/createProfile';
+        }
+      } catch {
+        // Fallback: store whatever login returned
+        localStorage.setItem('user', JSON.stringify(response.user));
+      }
+
+      navigate(destination);
     } catch (err) {
       console.error('Login failed:', err);
       // Display error to the user

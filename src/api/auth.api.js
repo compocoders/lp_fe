@@ -11,7 +11,7 @@ export const register = async (userData) => {
 };
 
 export const getMe = async () => {
-  const response = await api.get('/auth/me');
+  const response = await api.get('/auth/me', { skipGlobalErrorHandler: true });
   return response.data;
 };
 
