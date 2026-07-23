@@ -743,6 +743,8 @@ const ClassroomDetail = () => {
           .split-container.tab-members .fixed-right-panel { width: 100% !important; max-width: 100% !important; height: auto !important; flex: none !important; }
           .split-container.tab-materials { flex-direction: row !important; overflow: hidden !important; }
           .split-container.tab-materials .left-panel-wrapper { width: 100% !important; flex: 1 !important; height: 100% !important; }
+          .split-container.tab-gradebook, .split-container.tab-grades, .split-container.tab-ai-spark { overflow: hidden !important; }
+          .split-container.tab-gradebook > *, .split-container.tab-grades > *, .split-container.tab-ai-spark > * { width: 100% !important; max-width: 100% !important; flex: 1 !important; min-width: 0 !important; }
           .chat-panel-container { position: absolute !important; right: 12px; top: 12px; bottom: 12px; z-index: 50; pointer-events: none; }
           .chat-panel-container > * { pointer-events: auto; }
           .right-panel-wrapper.is-open { width: calc(100vw - 76px) !important; }

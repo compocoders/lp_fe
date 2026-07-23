@@ -93,7 +93,7 @@ const Mainpage = () => {
         </div>
 
         {/* Page content */}
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 flex flex-col overflow-hidden min-h-0">
           <Outlet context={{ dashboardData, fetchDashboardData }} />
         </div>
       </div>
