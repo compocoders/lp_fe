@@ -165,26 +165,33 @@ const ActivityGradebook = () => {
 
   return (
     <div className="flex-1 flex flex-col h-full bg-[#FAFCFA] dark:bg-[#121612] font-sans">
-      <div className="bg-white dark:bg-[#1A211A] px-6 py-4 border-b border-gray-100 dark:border-white/10 flex items-center justify-between sticky top-0 z-10 shadow-sm shrink-0">
-        <div className="flex items-center gap-3">
+      <div className="bg-white dark:bg-[#1A211A] px-4 md:px-6 py-4 border-b border-gray-100 dark:border-white/10 flex items-center gap-3 sticky top-0 z-10 shadow-sm shrink-0">
+        {selectedSubmission ? (
           <button 
-            onClick={() => navigate(-1)} 
-            className="p-2 mr-2 bg-gray-100 dark:bg-white/5 rounded-full hover:bg-gray-200 dark:hover:bg-white/10 transition-colors border-none cursor-pointer"
+            onClick={() => setSelectedSubmission(null)} 
+            className="p-2 shrink-0 bg-gray-100 dark:bg-white/5 rounded-full hover:bg-gray-200 dark:hover:bg-white/10 transition-colors border-none cursor-pointer md:hidden"
           >
             <ChevronLeft size={18} className="text-gray-600 dark:text-gray-300" />
           </button>
-          <div>
-            <span className="text-base font-bold text-gray-900 dark:text-white">Gradebook: {activity?.title}</span>
-            <p className="text-[11px] text-gray-400 dark:text-gray-500">
-              {submissions.length} Submissions
-            </p>
-          </div>
+        ) : (
+          <button 
+            onClick={() => navigate(-1)} 
+            className="p-2 shrink-0 bg-gray-100 dark:bg-white/5 rounded-full hover:bg-gray-200 dark:hover:bg-white/10 transition-colors border-none cursor-pointer"
+          >
+            <ChevronLeft size={18} className="text-gray-600 dark:text-gray-300" />
+          </button>
+        )}
+        <div className="min-w-0">
+          <span className="text-sm md:text-base font-bold text-gray-900 dark:text-white line-clamp-1">Gradebook: {activity?.title}</span>
+          <p className="text-[11px] text-gray-400 dark:text-gray-500">
+            {submissions.length} Submissions
+          </p>
         </div>
       </div>
 
       <div className="flex-1 flex overflow-hidden">
-        {/* Left Sidebar: Submission List */}
-        <div className="w-80 bg-white dark:bg-[#1A211A] border-r border-gray-100 dark:border-white/10 flex flex-col overflow-y-auto shrink-0">
+        {/* Submission List */}
+        <div className={`w-full md:w-80 bg-white dark:bg-[#1A211A] border-r border-gray-100 dark:border-white/10 flex flex-col overflow-y-auto shrink-0 ${selectedSubmission ? 'hidden md:flex' : 'flex'}`}>
           {submissions.length === 0 ? (
             <div className="p-8 text-center text-gray-500 text-sm">No submissions yet.</div>
           ) : (
@@ -220,15 +227,15 @@ const ActivityGradebook = () => {
           )}
         </div>
 
-        {/* Right Area: Grading UI */}
-        <div className="flex-1 overflow-y-auto p-8 flex justify-center">
+        {/* Grading UI */}
+        <div className={`flex-1 overflow-y-auto p-4 md:p-8 flex justify-center ${!selectedSubmission ? 'hidden md:flex' : 'flex'}`}>
           {!selectedSubmission ? (
-            <div className="text-gray-400 dark:text-gray-600 text-center mt-20">
+            <div className="text-gray-400 dark:text-gray-600 text-center mt-20 hidden md:block">
               Select a submission from the list to start grading
             </div>
           ) : (
             <div className="max-w-3xl w-full flex flex-col gap-6">
-              <div className="bg-white dark:bg-[#1A211A] rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-white/10 flex justify-between items-center sticky top-0 z-10">
+              <div className="bg-white dark:bg-[#1A211A] rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-white/10 flex flex-col md:flex-row md:justify-between items-start md:items-center gap-4 sticky top-0 z-10">
                 <div>
                   <h2 className="text-lg font-bold text-gray-900 dark:text-white">
                     {selectedSubmission.Student?.profile?.firstName 
@@ -237,20 +244,20 @@ const ActivityGradebook = () => {
                   </h2>
                   <p className="text-sm text-gray-500">Submitted on {new Date(selectedSubmission.submittedAt).toLocaleString()}</p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 w-full md:w-auto">
                   <button 
                     onClick={handleAIGrade}
                     disabled={isAIGrading || isGrading || isTokensExhausted()}
-                    className="px-4 py-2.5 bg-purple-50 dark:bg-purple-900/10 hover:bg-purple-100 dark:hover:bg-purple-900/20 text-purple-600 dark:text-purple-400 font-bold text-sm rounded-xl transition-all border-none cursor-pointer flex items-center gap-2 disabled:opacity-50"
+                    className="flex-1 md:flex-none px-4 py-2.5 bg-purple-50 dark:bg-purple-900/10 hover:bg-purple-100 dark:hover:bg-purple-900/20 text-purple-600 dark:text-purple-400 font-bold text-sm rounded-xl transition-all border-none cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
                   >
-                    {isAIGrading ? <Loader2 size={16} className="animate-spin" /> : <><Sparkles size={16} /> Auto-Grade with AI</>}
+                    {isAIGrading ? <Loader2 size={16} className="animate-spin" /> : <><Sparkles size={16} /> AI</>}
                   </button>
                   <button 
                     onClick={submitGrade}
                     disabled={isGrading || isAIGrading}
-                    className="px-6 py-2.5 bg-[#FFC700] hover:bg-[#FFD633] text-gray-900 font-extrabold text-sm rounded-xl shadow-md transition-all border-none cursor-pointer flex items-center gap-2 disabled:opacity-50"
+                    className="flex-1 md:flex-none px-6 py-2.5 bg-[#FFC700] hover:bg-[#FFD633] text-gray-900 font-extrabold text-sm rounded-xl shadow-md transition-all border-none cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
                   >
-                    {isGrading ? <Loader2 size={16} className="animate-spin" /> : 'Save Grade'}
+                    {isGrading ? <Loader2 size={16} className="animate-spin" /> : 'Save'}
                   </button>
                 </div>
               </div>
@@ -290,7 +297,7 @@ const ActivityGradebook = () => {
                       {ans?.content?.fileUrl && (
                         <div className="flex items-center gap-3">
                           <File size={20} className="text-[#5D7C59]" />
-                          <span className="text-sm">{ans.content.fileName || 'Uploaded File'}</span>
+                          <span className="text-sm truncate">{ans.content.fileName || 'Uploaded File'}</span>
                           <a 
                             href={ans.content.fileUrl} 
                             target="_blank" 
@@ -344,42 +351,15 @@ const ActivityGradebook = () => {
                         return (
                           <div className="flex flex-col gap-4">
                             <div className="flex flex-col gap-2">
-                              <span className="text-xs font-bold text-[#5D7C59] uppercase tracking-widest">Live Preview ({framework.name})</span>
-                              <div className="bg-white rounded-xl shadow-inner border border-gray-200 overflow-hidden" style={{ minHeight: '300px' }}>
+                              <span className="text-xs font-bold text-[#5D7C59] uppercase tracking-widest">Live Preview</span>
+                              <div className="bg-white rounded-xl shadow-inner border border-gray-200 overflow-hidden" style={{ minHeight: '200px' }}>
                                 <iframe
                                   title="Frontend Preview"
                                   srcDoc={srcDoc}
-                                  className="w-full h-full min-h-[300px] border-none bg-white"
+                                  className="w-full h-full min-h-[200px] border-none bg-white"
                                   sandbox="allow-scripts allow-modals allow-same-origin"
                                 />
                               </div>
-                            </div>
-                            <div className="flex flex-col gap-2 mt-4">
-                              <span className="text-xs font-bold text-[#5D7C59] uppercase tracking-widest">Source Code</span>
-                              {ans.content.html && (
-                                <>
-                                  <span className="text-xs font-bold text-gray-500 uppercase mt-2">HTML</span>
-                                  <pre className="bg-[#1e1e1e] text-gray-300 p-4 rounded-lg text-xs font-mono overflow-x-auto">
-                                    {ans.content.html}
-                                  </pre>
-                                </>
-                              )}
-                              {ans.content.css && (
-                                <>
-                                  <span className="text-xs font-bold text-gray-500 uppercase mt-2">CSS</span>
-                                  <pre className="bg-[#1e1e1e] text-gray-300 p-4 rounded-lg text-xs font-mono overflow-x-auto">
-                                    {ans.content.css}
-                                  </pre>
-                                </>
-                              )}
-                              {ans.content.js && (
-                                <>
-                                  <span className="text-xs font-bold text-gray-500 uppercase mt-2">JS</span>
-                                  <pre className="bg-[#1e1e1e] text-gray-300 p-4 rounded-lg text-xs font-mono overflow-x-auto">
-                                    {ans.content.js}
-                                  </pre>
-                                </>
-                              )}
                             </div>
                           </div>
                         );
@@ -401,10 +381,10 @@ const ActivityGradebook = () => {
                           />
                         </div>
                         <div className="flex-1">
-                          <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Feedback (Optional)</label>
+                          <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Feedback</label>
                           <input 
                             type="text" 
-                            placeholder="Great job!"
+                            placeholder="Feedback..."
                             value={feedback[ans.id] || ''}
                             onChange={(e) => setFeedback(prev => ({ ...prev, [ans.id]: e.target.value }))}
                             className="w-full bg-white dark:bg-[#1A211A] border border-gray-200 dark:border-white/10 rounded-lg px-3 py-2 text-sm focus:border-[#5D7C59] outline-none"
@@ -416,16 +396,15 @@ const ActivityGradebook = () => {
                 );
               })}
 
-              <div className="bg-white dark:bg-[#1A211A] rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-white/10">
+              <div className="bg-white dark:bg-[#1A211A] rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-white/10 mb-8">
                 <label className="text-[12px] font-bold text-[#5D7C59] dark:text-[#7A9A7B] uppercase tracking-widest block mb-2">Overall Feedback</label>
                 <textarea 
                   value={generalFeedback}
                   onChange={(e) => setGeneralFeedback(e.target.value)}
-                  placeholder="Leave general feedback for this submission..."
+                  placeholder="General feedback..."
                   className="w-full bg-[#FAFCFA] dark:bg-[#232B23] border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm focus:border-[#5D7C59] outline-none min-h-[100px] resize-y"
                 />
               </div>
-
             </div>
           )}
         </div>
