@@ -103,8 +103,8 @@ const ClassroomGradebook = ({ classroomId }) => {
             <tr>
               {/* Student col header */}
               <th
-                style={{ minWidth: 130, backgroundColor: '#F7FAF7' }}
-                className="px-3 py-2.5 text-left border-b-2 border-[#5D7C59]/20"
+                style={{ minWidth: 130 }}
+                className="px-3 py-2.5 text-left border-b-2 border-[#5D7C59]/20 bg-[#FAFCFA] dark:bg-[#232B23]"
               >
                 <span className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Student</span>
               </th>
@@ -167,12 +167,11 @@ const ClassroomGradebook = ({ classroomId }) => {
                 return (
                   <tr
                     key={row.student.id}
-                    className="transition-colors group"
-                    style={{ borderBottom: '1px solid rgba(0,0,0,0.04)' }}
+                    className={`transition-colors group ${isEven ? 'bg-white dark:bg-[#1A211A]' : 'bg-[#FAFCFA] dark:bg-[#232B23]'}`}
                   >
                     {/* Student cell */}
                     <td
-                      style={{ minWidth: 130, backgroundColor: isEven ? '#ffffff' : '#F7FAF7' }}
+                      style={{ minWidth: 130 }}
                       className="px-3 py-2.5 border-r border-gray-100 dark:border-white/5"
                     >
                       <div className="flex items-center gap-2">
