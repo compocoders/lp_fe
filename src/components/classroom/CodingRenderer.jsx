@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Editor from '@monaco-editor/react';
 import { Play, Loader2, Code2, Terminal } from 'lucide-react';
 import api from '../../api/axios';
+import { formatCompilerOutput } from './compilerOutput';
 
 const LANGUAGES = [
   { id: 'javascript', name: 'JavaScript', version: '18.15.0', monaco: 'javascript' },
@@ -39,13 +40,7 @@ const CodingRenderer = ({ question, value, onChange, disabled }) => {
       });
       
       const runResult = response.data;
-      // Handle the local backend response format
-      let finalOutput = '';
-      if (runResult.status === 'error') {
-        finalOutput = runResult.error || runResult.stderr || 'Execution failed with an error.';
-      } else {
-        finalOutput = runResult.stdout || runResult.stderr || 'Code executed successfully with no output.';
-      }
+      const finalOutput = formatCompilerOutput(runResult);
       
       setOutput(finalOutput);
       onChange(question.id, { code, language, output: finalOutput });
